@@ -1,0 +1,57 @@
+/* tutorial.css — はじめての応対（ガイドつき）。tutorial.js と組。v2.css の上に重ねる */
+
+/* 手引きのあいだは、ふつうの下線ヒントは出さない（手引きが代わりに案内する） */
+body.tut #word-hint { display: none !important; }
+body.tut { padding-bottom: var(--coach-h, 0px); }
+
+/* いま押す相手：金色の光（「本当の望み」と同じ色） */
+.tut-target, body.tut #replies-box { scroll-margin: 70px 0 calc(var(--coach-h, 0px) + 12px); }
+.badge.tut-target { background: #3a2e14; color: #ffe6a0; border-color: var(--need); animation: tutGlow 1.4s ease-in-out infinite; z-index: 5; }
+.word.tut-target { background: #ffe2a8; border-bottom: 2px solid #c07a30; animation: tutGlow 1.4s ease-in-out infinite; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.reply.tut-target { animation: tutGlow 1.4s ease-in-out infinite; }
+@keyframes tutGlow { 0%, 100% { box-shadow: 0 0 0 2px #f6c860, 0 0 6px #f6c86066; } 50% { box-shadow: 0 0 0 3px #f6c860, 0 0 18px #f6c860cc; } }
+.tut-ping { animation: tutPing .5s ease-out, tutGlow 1.4s ease-in-out .5s infinite !important; }
+@keyframes tutPing { 40% { transform: scale(1.1); box-shadow: 0 0 0 5px #f6c860, 0 0 24px #f6c860; } }
+
+/* いまは押せないもの：読めるくらいに控えめに。押しても何も起きない（game.js 側で止める） */
+.tut-off { cursor: not-allowed !important; }
+.badge.tut-off, .reply.tut-off, #silence.tut-off, .d-btn.tut-off { opacity: .4; filter: saturate(.4); }
+.word.tut-off { background: transparent; border-bottom-color: transparent; padding: 0; }
+.reply.tut-off:hover { background: #f3ece0; transform: none; }
+.badge.tut-off:hover { transform: none; background: #10202ce6; color: #9fd0f0; }
+#silence.tut-off:hover { background: transparent; } .d-btn.tut-off:hover { filter: saturate(.4); }
+
+/* 手引きの札：画面の下に固定（スマートフォンでも、スクロールせずに読める） */
+#coach {
+  position: fixed; z-index: 50; left: 50%; transform: translateX(-50%);
+  bottom: max(10px, env(safe-area-inset-bottom)); width: min(560px, calc(100% - 20px));
+  background: #221c2a; border: 2px solid var(--need); border-radius: 14px; padding: 10px 16px 12px;
+  box-shadow: 0 6px 24px #000c; color: #f3ece0; animation: coachIn .3s ease-out;
+}
+@keyframes coachIn { from { transform: translate(-50%, 16px); opacity: 0; } }
+#coach.ok { border-color: var(--ok); }
+#coach.nudge { animation: coachNudge .4s; }
+@keyframes coachNudge { 20%, 60% { transform: translateX(calc(-50% - 6px)); } 40%, 80% { transform: translateX(calc(-50% + 6px)); } }
+.co-dots { display: flex; gap: 6px; margin-bottom: 6px; }
+.co-dots span { width: 22px; height: 5px; border-radius: 3px; background: #5a4a6a; }
+.co-dots span.past { background: var(--ok); } .co-dots span.now { background: var(--need); }
+.co-title { font-size: 12.5px; color: var(--need); letter-spacing: .1em; margin-bottom: 2px; }
+.co-text { font-size: 16px; font-weight: bold; line-height: 1.5; color: #ffe0a0; }
+.co-text.co-ok { color: #c8f0d2; font-weight: normal; }
+.co-sub { font-size: 13.5px; line-height: 1.5; opacity: .8; margin-top: 2px; }
+#coach-go { display: block; width: 100%; margin-top: 10px; min-height: 48px; font-size: 16px; font-weight: bold; border: 0; border-radius: 10px;
+  background: #2e7a3e; color: #fff; cursor: pointer; touch-action: manipulation; }
+#coach-go:hover { background: #3a9a4e; }
+
+/* 手引きを終えたとき、使えるようになったものを一度だけ光らせる */
+body.tut-free .badge, body.tut-free #silence, body.tut-free .d-btn { animation: tutFree 1.4s ease-out; }
+@keyframes tutFree { 30% { box-shadow: 0 0 0 3px #f6c860aa, 0 0 14px #f6c86088; } }
+
+@media (max-width: 480px) {
+  #coach { padding: 9px 13px 11px; }
+  .co-text { font-size: 15.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tut-target, .tut-ping, #coach, #coach.nudge, body.tut-free .badge, body.tut-free #silence, body.tut-free .d-btn { animation: none !important; }
+  .tut-target { box-shadow: 0 0 0 3px #f6c860 !important; }
+}

@@ -286,6 +286,7 @@ function render() {
   renderLeon(); renderHud(); renderMemo();
   if (!S.over) renderReplies();
   document.body.classList.toggle('busy', S.busy);
+  TUT.mark();
 }
 function wordsToHtml(t) {
   return t.replace(/\{(\w+)\|([^}]+)\}/g, (_, k, w) => `<span class="word ${S.mirrored.has(k) ? 'used' : ''}" data-w="${k}" data-txt="${w}">${w}</span>`);
@@ -294,6 +295,7 @@ async function leonSay(r) {
   const b = $('#v-bubble');
   b.className = r.right ? 'right' : S.irr >= 3 ? 'hot' : S.open >= 3 ? 'soft' : '';
   b.innerHTML = (r.gest ? `<span class="gest">（${r.gest}）</span>` : '') + wordsToHtml(r.t);
+  TUT.mark();
   const w = $('#visitor-wrap'); w.classList.remove('bump', 'shake'); void w.offsetWidth; w.classList.add((r.irr || 0) > 0 ? 'shake' : 'bump');
   setTimeout(() => w.classList.remove('bump', 'shake'), 500);
   if (S.f.mirrors === 0 && /\{/.test(r.t) && S.turn <= 6) $('#word-hint').classList.remove('hidden'); else $('#word-hint').classList.add('hidden');
@@ -433,29 +435,32 @@ function playScene(beats) {
 }
 
 // ---------------- 入力 ----------------
+// 手引きのあいだは、TUT.allow() が「いま押してよい相手か」を決める（tutorial.js）。だめなら何も起こさない。
 document.addEventListener('click', (e) => {
   const t = e.target;
   if (!S || S.busy || S.over || document.body.classList.contains('in-scene')) return;
   const w = t.closest('.word');
   if (w) {
     const k = w.dataset.w, txt = w.dataset.txt;
+    if (!TUT.allow('word', k)) return;
     const again = S.mirrored.has(k);
     S.mirrored.add(k); S.f.mirrors++; S.lastOpt = null;
-    return turn(`「……${txt.replace(/[。、！？]$/, '')}？」`, () => (again ? { t: '……さっきも言ったろ', expr: 'neutral', pose: S.face.pose } : WORDS[k]()));
+    return TUT.after(turn(`「……${txt.replace(/[。、！？]$/, '')}？」`, () => (again ? { t: '……さっきも言ったろ', expr: 'neutral', pose: S.face.pose } : WORDS[k]())));
   }
   const o = t.closest('[data-o]');
   if (o) {
+    if (!TUT.allow('reply', o.dataset.o)) return;
     const opt = OPTIONS.find((x) => x.id === o.dataset.o);
     if (!opt.keep) S.used.add(opt.id);
     S.lastOpt = opt.id;
     const line = typeof opt.t === 'function' ? opt.t() : opt.t;
-    return turn(`「${line}」`, opt.act);
+    return TUT.after(turn(`「${line}」`, opt.act));
   }
-  if (t.closest('#silence')) { S.lastOpt = null; return turn('……', silence); }
+  if (t.closest('#silence')) { if (!TUT.allow('silence')) return; S.lastOpt = null; return turn('……', silence); }
   const lk = t.closest('[data-look]');
-  if (lk) return look(lk.dataset.look);
-  if (t.closest('#btn-fight')) return goFight();
-  if (t.closest('#btn-refuse')) return goRefuse();
+  if (lk) { if (!TUT.allow('look', lk.dataset.look)) return; return TUT.after(look(lk.dataset.look)); }
+  if (t.closest('#btn-fight')) { if (!TUT.allow('fight')) return; return goFight(); }
+  if (t.closest('#btn-refuse')) { if (!TUT.allow('refuse')) return; return goRefuse(); }
 });
 
 async function look(k) {
@@ -496,5 +501,6 @@ async function start() {
   await totoSay('（カラン、と呼び鈴。……ぴかぴかの鎧の若者だ）', true);
   await leonSay({ t: '魔王はどこだ！ 勇者レオン、魔王に{duel|一騎打ち}を申し込む！' });
   S.busy = false; render();
+  TUT.begin(); // はじめての人には、1手ずつの手引き（tutorial.js）
 }
 start();
