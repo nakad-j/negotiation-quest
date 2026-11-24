@@ -1,37 +1,69 @@
 /* storybook.css — 絵本の見た目（storybook.js と組）。style.css / v2.css / tutorial.css の上に重ねる
-   ・文章の枠（羊皮紙・名札）と見出しの帯：すべての場面（導入・結末）
-   ・背景の絵・アーチの額の人物・顔絵：painted の場面（いまは導入だけ） */
+   ・共通：羊皮紙の枠・名札・アーチの額・顔絵
+   ・場面（導入・結末）：#scene.painted
+   ・応対の画面：body.painted（トトは左、訪問者は右、ふたりの間に吹き出し） */
 :root {
   --ink: #2c1d14; --parch: #f4e6c6; --parch-2: #e8d2a4; --rim: #7a5530; --gold: #c9a24a;
   --plum: #3d2244; --plum-2: #271530; --book-serif: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
-}
-
-/* ---------- 文章の枠：羊皮紙 ---------- */
-#scene-box {
-  left: 18px; right: 18px; bottom: 14px; padding: 20px 22px 12px; color: var(--ink);
-  background:
+  --parchment:
     radial-gradient(ellipse 60% 90% at 12% 0%, #fffaeacc, transparent 70%),
     radial-gradient(ellipse 50% 80% at 100% 100%, #b98a4e40, transparent 70%),
     radial-gradient(ellipse 40% 70% at 0% 100%, #b98a4e30, transparent 70%),
     linear-gradient(170deg, var(--parch), var(--parch-2));
+}
+
+/* =====================================================================
+   共通の部品
+   ===================================================================== */
+/* 羊皮紙の枠 */
+#scene-box, body.painted #toto-say, body.painted #v-bubble {
+  color: var(--ink); background: var(--parchment);
   border: 2px solid var(--rim); border-radius: 10px;
   box-shadow: inset 0 0 0 4px var(--parch), inset 0 0 0 5px #b8904e99, inset 0 0 26px #9a6a3a40, 0 10px 28px #000c;
 }
-/* 控えめな飾り：右上と左下の角に小さな金のひし形 */
+/* 名札：設定画の見出しと同じ、紫地に金の縁 */
+#scene-speaker, body.painted #toto-say::before, body.painted #v-bubble::before {
+  position: absolute; top: -16px; left: 16px; z-index: 1; padding: 3px 14px 4px;
+  font-family: var(--book-serif); font-size: 15px; font-weight: bold; font-style: normal; letter-spacing: .08em; line-height: 1.4;
+  color: #f8e6b8; background: linear-gradient(var(--plum), var(--plum-2)); border: 1.5px solid var(--gold); border-radius: 6px;
+  box-shadow: 0 0 0 2px #00000055, 0 3px 8px #0009; white-space: nowrap;
+}
+/* アーチの額（設定画の絵には背景があるので、切り抜かずに額に入れる） */
+.arch {
+  overflow: hidden; aspect-ratio: 3 / 5; background: var(--plum-2);
+  border: 3px solid var(--gold); border-bottom: 0; border-radius: 50% 50% 0 0 / 28% 28% 0 0;
+  box-shadow: 0 0 0 2px #2a1630, 0 0 0 5px #c9a24a44, 0 12px 30px #000b;
+  transition: filter .35s, transform .35s, opacity .45s;
+}
+.arch img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; display: block; transition: transform .5s; }
+/* 背景の絵 */
+.paint-bg { width: 100%; height: 100%; object-fit: cover; object-position: 50% 58%; display: block; }
+.paint-tint { position: absolute; inset: 0; pointer-events: none; }
+.paint-tint.fire { background: radial-gradient(ellipse 90% 70% at 50% 105%, #ff7a2ae0, transparent 70%), linear-gradient(#3a0a0a66, #ff5a1a55); mix-blend-mode: hard-light; }
+/* 縁を少し沈めて、人物と文字を浮かせる */
+#scene.painted #scene-bg::after, body.painted #bg::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 75% 85% at 50% 42%, transparent 55%, #140a1c99 100%), linear-gradient(transparent 50%, #140a1c80);
+}
+/* 顔絵（吹き出しの左に添える） */
+.bk-face {
+  float: left; width: 84px; aspect-ratio: 140 / 132; object-fit: cover; margin: 2px 14px 4px 0; border-radius: 7px;
+  border: 2px solid var(--rim); box-shadow: 0 0 0 2.5px var(--parch), 0 0 0 4px var(--gold), 0 3px 8px #0006; animation: faceIn .25s ease-out;
+}
+@keyframes faceIn { from { opacity: .3; } }
+/* 魔王様の小さな顔（HUD・扉） */
+.king-icon { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; border: 1.5px solid var(--gold); }
+
+/* =====================================================================
+   場面（導入・結末）
+   ===================================================================== */
+#scene-box { left: 18px; right: 18px; bottom: 14px; padding: 20px 22px 12px; }
 #scene-box::before, #scene-box::after {
   content: ""; position: absolute; width: 9px; height: 9px; background: var(--gold);
   border: 1.5px solid #6a4520; transform: rotate(45deg); pointer-events: none;
 }
 #scene-box::before { top: -6px; right: 26px; }
 #scene-box::after { bottom: -6px; left: 26px; }
-
-/* 名札：設定画の見出しと同じ、紫地に金の縁 */
-#scene-speaker {
-  position: absolute; top: -16px; left: 18px; z-index: 1; padding: 3px 16px 4px;
-  font-family: var(--book-serif); font-size: 15px; font-weight: bold; letter-spacing: .08em; color: #f8e6b8;
-  background: linear-gradient(var(--plum), var(--plum-2)); border: 1.5px solid var(--gold); border-radius: 6px;
-  box-shadow: 0 0 0 2px #00000055, 0 3px 8px #0009;
-}
 #scene-speaker:empty { display: none; }
 #scene-text { color: var(--ink); font-size: 18px; line-height: 1.75; }
 #scene-choices { margin-top: 4px; }
@@ -41,8 +73,7 @@
 }
 .next-btn:hover { filter: brightness(1.2); }
 .next-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
-
-/* 見出しの帯（「魔王城の昼さがり」など） */
+/* 見出しの帯 */
 .caption-big {
   left: 50%; right: auto; transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px);
   padding: 5px 26px 6px; font-family: var(--book-serif); font-size: 22px; letter-spacing: .24em; color: #f8e6b8;
@@ -50,66 +81,138 @@
   box-shadow: 0 0 0 2px #00000055, 0 6px 16px #000a; text-shadow: 0 1px 2px #000;
 }
 
-/* ---------- painted：背景の絵 ---------- */
 #scene.painted #scene-bg { background: var(--plum-2); }
-#scene.painted .paint-bg { width: 100%; height: 100%; object-fit: cover; object-position: 50% 58%; display: block; }
-/* 縁を少し沈めて、人物と文字を浮かせる */
-#scene.painted #scene-bg::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse 75% 85% at 50% 42%, transparent 55%, #140a1c99 100%), linear-gradient(transparent 50%, #140a1c80);
-}
-
-/* ---------- painted：人物（アーチの額） ---------- */
 #scene.painted #scene-cast { display: block; inset: 0; }
-#scene.painted .fig {
-  position: absolute; bottom: 0; margin: 0; overflow: hidden; aspect-ratio: 350 / 572;
-  border: 3px solid var(--gold); border-bottom: 0; border-radius: 50% 50% 0 0 / 28% 28% 0 0;
-  background: var(--plum-2); box-shadow: 0 0 0 2px #2a1630, 0 0 0 5px #c9a24a44, 0 12px 30px #000b;
-  transform-origin: 50% 100%; transition: filter .35s, transform .35s, opacity .45s;
-}
-#scene.painted .fig img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; display: block; }
-#scene.painted .fig-toto { left: 6%; height: 82%; }
-#scene.painted .fig-garza2 { right: 6%; height: 92%; aspect-ratio: 344 / 600; }
+#scene.painted .fig { position: absolute; bottom: 0; margin: 0; height: 92%; transform-origin: 50% 100%; }
+#scene.painted .fig[data-who="toto"] { height: 82%; }
+#scene.painted .fig[data-slot="L"] { left: 6%; }
+#scene.painted .fig[data-slot="R"] { right: 6%; }
+#scene.painted .fig[data-slot="C"] { left: 0; right: 0; margin: 0 auto; }
 #scene.painted .fig.listening { filter: brightness(.6) saturate(.8); transform: scale(.96); }
 #scene.painted .fig.away { opacity: 0; transform: translateY(18px) scale(.96); }
 
-/* ---------- painted：文章の枠に顔絵 ---------- */
+/* 文章の枠に顔絵 */
 #scene.painted #scene-box { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 18px; align-items: start; }
 #scene.painted #scene-text, #scene.painted #scene-choices { grid-column: 2; }
 #scene-face { grid-column: 1; grid-row: 1 / 3; width: 112px; aspect-ratio: 156 / 135; border-radius: 8px; overflow: hidden;
   border: 2px solid var(--rim); box-shadow: 0 0 0 3px var(--parch), 0 0 0 4.5px var(--gold), 0 3px 8px #0006; }
 #scene-face img { width: 100%; height: 100%; object-fit: cover; display: block; animation: faceIn .25s ease-out; }
-@keyframes faceIn { from { opacity: .3; } }
 #scene-face:empty { display: none; }
 
-/* 舞台の高さ：デスクトップの導入だけ、少し高く（絵の縦横比 1256×472 に近づける） */
+/* =====================================================================
+   応対の画面（body.painted）
+   左：トト（アーチ）　中：トトの言葉（上）・訪問者の言葉（下）　右：訪問者（アーチ）
+   ===================================================================== */
+body.painted #bg { background: var(--plum-2); }
+body.painted .desk-top, body.painted #v-name { display: none; }
+body.painted #desk { position: absolute; }
+body.painted #toto, body.painted #visitor { position: absolute; inset: 0; width: auto; height: auto; }
+body.painted #toto .arch, body.painted #visitor .arch { position: absolute; inset: 0; height: 100%; }
+/* 話していない人は、少し暗く */
+body.painted[data-speaker="toto"] #visitor .arch,
+body.painted[data-speaker]:not([data-speaker="toto"]) #toto .arch { filter: brightness(.62) saturate(.8); }
+/* 肩を落としたとき（pose: slump）、額の中で少し沈む */
+body.painted #visitor-wrap[data-pose="slump"] .arch img { transform: translateY(4%); }
+/* こころの開き：距離（額が額縁の外にはみ出さない程度に） */
+body.painted #visitor-wrap { transform-origin: 50% 100%; }
+body.painted #visitor-wrap.o0 { transform: translateX(10px) scale(.95); }
+body.painted #visitor-wrap.o1 { transform: translateX(5px) scale(.975); }
+body.painted #visitor-wrap.o2 { transform: none; }
+body.painted #visitor-wrap.o3 { transform: translateX(-10px) scale(1.03); }
+body.painted #visitor-wrap.boil #visitor { filter: drop-shadow(0 0 12px #ff6a4aaa); }
+
+/* 🔍 調べる札：訪問者の額の下のほう（顔にかからない）に、縦にならべる */
+body.painted .badge { left: 8px !important; }
+body.painted .badge[data-look="hands"]  { top: 50% !important; }
+body.painted .badge[data-look="armor"]  { top: 60% !important; }
+body.painted .badge[data-look="sword"]  { top: 70% !important; }
+body.painted .badge[data-look="letter"] { top: 80% !important; }
+
+/* 言葉（吹き出し） */
+body.painted #toto-say, body.painted #v-bubble { padding: 20px 16px 12px; border-left: 2px solid var(--rim); }
+body.painted #toto-say::before, body.painted #v-bubble::before { content: attr(data-name); display: block; opacity: 1; text-align: left; }
+body.painted #toto-say[data-name=""]::before, body.painted #v-bubble[data-name=""]::before { display: none; }
+body.painted #toto-say { font-size: 15px; line-height: 1.6; }
+body.painted #toto-say .bk-face { width: 58px; margin-right: 10px; }
+body.painted #toto-say.think { background: linear-gradient(170deg, #efe8f4, #dcd2e6); color: #2e2440; font-style: italic; padding-top: 12px; }
+body.painted #v-bubble { font-size: 16.5px; line-height: 1.7; }
+body.painted #v-bubble .gest { color: #7a5a3a; }
+body.painted #v-bubble.hot { border-color: #a8402a; box-shadow: inset 0 0 0 4px var(--parch), inset 0 0 0 5px #c0503a, inset 0 0 26px #c0503a40, 0 10px 28px #000c; }
+body.painted #v-bubble.soft { background: linear-gradient(170deg, #f3eaf6, #e2d4ea); color: #33243f; font-size: 16px; }
+body.painted #v-bubble.right { box-shadow: inset 0 0 0 4px var(--parch), 0 0 0 3px #f6c860, 0 0 28px #f6c860aa; }
+body.painted .word { background: #f2d48a88; border-bottom: 2px dashed #8a5a20; }
+body.painted .word:hover { background: #f2d48a; }
+body.painted .word.used { background: transparent; border-bottom: 2px solid #c8b088; }
+
+/* 扉の向こうの魔王様（お昼寝中）：左上の小さなメダル */
+body.painted #door { left: 1.5%; top: 10px; width: auto; height: auto; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 4px; z-index: 2; }
+body.painted #door-garza { width: 50px; height: 50px; box-shadow: 0 0 0 3px #2a1630, 0 4px 10px #000a; border-radius: 50%; }
+body.painted #door-tag { margin: 0; font-size: 11px; background: #1a0e20d9; border: 1px solid #c9a24a88; color: #f8e6b8; }
+/* HUD の魔王様 */
+body.painted .meter .mini, body.painted .meter .mini img { width: 30px; height: 30px; }
+
+/* ---------- デスクトップ（821px 以上） ---------- */
 @media (min-width: 821px) {
-  body.scene-painted #stage { height: clamp(420px, 40vw, 480px); }
+  /* 舞台の高さ（導入・応対・結末で同じ）と、人物の大きさ */
+  body.painted #stage {
+    --H: clamp(400px, 36vw, 440px); height: var(--H);
+    --toto-h: calc(var(--H) * .7); --vis-h: calc(var(--H) * .9);
+    --col-l: calc(2% + var(--toto-h) * .6 + 18px); --col-r: calc(2.5% + var(--vis-h) * .6 + 30px);
+  }
+  body.painted #desk { left: 2%; bottom: 0; width: calc(var(--toto-h) * .6); height: var(--toto-h); }
+  body.painted #visitor-wrap { left: auto; right: 2.5%; bottom: 0; width: calc(var(--vis-h) * .6); height: var(--vis-h); }
+  body.painted #toto-say { left: var(--col-l); right: var(--col-r); top: 26px; bottom: auto; max-width: none; }
+  body.painted #v-bubble { left: var(--col-l); right: var(--col-r); bottom: 14px; top: auto; width: auto; }
+  body.painted #word-hint { left: var(--col-l); right: var(--col-r); top: 46%; text-align: center; }
 }
 
 /* ---------- スマートフォン・タブレット（v2.css の 820px 以下に合わせる） ---------- */
 @media (max-width: 820px) {
+  /* 場面 */
   #scene-box { left: auto; right: auto; bottom: auto; margin: 16px 10px 10px; padding: 18px 14px 10px; }
   #scene-speaker { left: 12px; font-size: 14px; padding: 2px 12px 3px; }
   #scene-text { font-size: 16px; line-height: 1.7; }
   .caption-big { top: 10px; font-size: 18px; letter-spacing: .16em; padding: 4px 16px 5px; }
-
   body.scene-painted #stage { min-height: calc(var(--art) + 250px); }
   #scene.painted #scene-cast { position: relative; inset: auto; flex: 1 1 auto; min-height: 230px; }
-  /* 見出しの帯の下から、人物を立たせる */
   #scene.painted .fig { height: calc(100% - 52px); width: 44%; aspect-ratio: auto; }
-  #scene.painted .fig-toto { left: 4%; height: calc(100% - 70px); }
-  #scene.painted .fig-garza2 { right: 4%; aspect-ratio: auto; }
+  #scene.painted .fig[data-who="toto"] { height: calc(100% - 70px); }
+  #scene.painted .fig[data-slot="L"] { left: 4%; } #scene.painted .fig[data-slot="R"] { right: 4%; }
+  #scene.painted .fig[data-slot="C"] { width: 52%; }
   #scene.painted #scene-box { column-gap: 12px; }
   #scene-face { width: 76px; border-radius: 6px; }
+
+  /* 応対：絵の中にふたりの額、絵の下に吹き出し */
+  body.painted #bg { left: 0; width: 100%; height: var(--art); }
+  body.painted #desk { left: 2%; top: calc(var(--art) * .32); bottom: auto; width: calc(var(--art) * .66 * .6); height: calc(var(--art) * .66); transform: none; }
+  body.painted #visitor-wrap { right: 2%; top: calc(var(--art) * .03); width: calc(var(--art) * .95 * .6); height: calc(var(--art) * .95); }
+  body.painted #visitor-wrap.o0 { transform: scale(.95); } body.painted #visitor-wrap.o1 { transform: scale(.975); }
+  body.painted #visitor-wrap.o3 { transform: scale(1.03); }
+  body.painted #door { left: 8px; top: 40px; }
+  body.painted #door-garza { width: 40px; height: 40px; }
+  body.painted #word-hint { top: 6px; }
+  body.painted #toto-say, body.painted #v-bubble { margin-top: 24px; padding: 18px 13px 10px; }
+  body.painted #toto-say.think { padding-top: 10px; }
+  body.painted #toto-say::before, body.painted #v-bubble::before { left: 12px; font-size: 13.5px; padding: 2px 11px 3px; }
+  body.painted #toto-say .bk-face { width: 44px; margin-right: 9px; }
+  body.painted #v-bubble .bk-face { width: 64px; margin-right: 11px; }
 }
 @media (max-width: 480px) {
   body.scene-painted #stage { min-height: calc(var(--art) + 270px); }
   #scene.painted .fig { width: 46%; }
-  #scene.painted .fig-toto { left: 2%; } #scene.painted .fig-garza2 { right: 2%; }
+  #scene.painted .fig[data-slot="L"] { left: 2%; } #scene.painted .fig[data-slot="R"] { right: 2%; }
   #scene-face { width: 60px; }
   #scene-text { font-size: 15.5px; }
+  body.painted #door { flex-direction: column; }
+  body.painted #door-garza { width: 36px; height: 36px; }
+  body.painted #door-tag { display: none; } /* 狭い画面では、眠る魔王様の顔だけ（Zzz つき） */
+  body.painted .badge { font-size: 12px; padding: 5px 9px; }
+  body.painted .badge[data-look="hands"]  { top: 42% !important; }
+  body.painted .badge[data-look="armor"]  { top: 56% !important; }
+  body.painted .badge[data-look="sword"]  { top: 70% !important; }
+  body.painted .badge[data-look="letter"] { top: 84% !important; }
+  body.painted #v-bubble .bk-face { width: 56px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  #scene.painted .fig, #scene-face img { transition: none; animation: none; }
+  .arch, .arch img, .bk-face, #scene-face img { transition: none; animation: none; }
 }

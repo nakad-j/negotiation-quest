@@ -13,6 +13,9 @@
 const $ = (s) => document.querySelector(s);
 const SPEED = new URLSearchParams(location.search).has('fast') ? 0.12 : 1;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms * SPEED));
+// 絵本の見た目（storybook.js）。読みこめていなければ、art.js の仮の絵で描く
+const PAINT = typeof BOOK !== 'undefined';
+const VISITOR = 'leon'; // 応対中の訪問者（storybook.js の CHARS のキー）
 
 // ---------------- 状態 ----------------
 let S;
@@ -248,14 +251,16 @@ function renderLeon() {
   const w = $('#visitor-wrap');
   w.classList.remove('o0', 'o1', 'o2', 'o3', 'hot', 'boil');
   postureClass().split(' ').filter(Boolean).forEach((c) => w.classList.add(c));
-  $('#visitor').innerHTML = ART.leon(S.face);
+  if (PAINT) { if (!$('#visitor .arch')) $('#visitor').innerHTML = BOOK.figure(VISITOR); w.dataset.pose = S.face.pose; }
+  else $('#visitor').innerHTML = ART.leon(S.face);
   $('#v-badges').innerHTML = Object.entries(LOOKS).map(([k, l]) =>
     `<div class="badge ${S.saw[k] ? 'done' : ''}" data-look="${k}" style="left:${l.pos[0]}px;top:${l.pos[1]}px">${S.saw[k] ? '✓' : '🔍'} ${l.lbl}</div>`).join('');
 }
 function renderHud() {
   const face = ['ouch', 'tired', 'calm', 'calm'][S.stamina];
-  $('#m-stamina').innerHTML = `<span class="mini">${ART.garza2({ expr: face })}</span><span class="lbl">魔王様の元気</span>${Array.from({ length: 3 }, (_, i) => `<span class="pip ${i < S.stamina ? '' : 'off'}">💪</span>`).join('')}`;
-  $('#door-garza').innerHTML = ART.garza2({ expr: face });
+  const king = PAINT ? BOOK.face('garza2', face, 'king-icon') : ART.garza2({ expr: face });
+  $('#m-stamina').innerHTML = `<span class="mini">${king}</span><span class="lbl">魔王様の元気</span>${Array.from({ length: 3 }, (_, i) => `<span class="pip ${i < S.stamina ? '' : 'off'}">💪</span>`).join('')}`;
+  $('#door-garza').innerHTML = PAINT ? BOOK.face('garza2', 'asleep', 'king-icon') : king; // 扉の向こうで、お昼寝中
   $('#door-tag').textContent = '玉座の間：魔王様（お昼寝中）';
 }
 // 見せたのに選ばれなかった返事は、少しずつ後ろに下がる（同じ3つが居座らないように）
@@ -295,6 +300,7 @@ async function leonSay(r) {
   const b = $('#v-bubble');
   b.className = r.right ? 'right' : S.irr >= 3 ? 'hot' : S.open >= 3 ? 'soft' : '';
   b.innerHTML = (r.gest ? `<span class="gest">（${r.gest}）</span>` : '') + wordsToHtml(r.t);
+  if (PAINT) { b.insertAdjacentHTML('afterbegin', BOOK.face(VISITOR, S.face.expr)); b.dataset.name = BOOK.name(VISITOR); BOOK.focus(VISITOR); }
   TUT.mark();
   const w = $('#visitor-wrap'); w.classList.remove('bump', 'shake'); void w.offsetWidth; w.classList.add((r.irr || 0) > 0 ? 'shake' : 'bump');
   setTimeout(() => w.classList.remove('bump', 'shake'), 500);
@@ -303,6 +309,8 @@ async function leonSay(r) {
 }
 async function totoSay(t, think = false) {
   const b = $('#toto-say'); b.className = think ? 'think' : ''; b.innerHTML = t;
+  // 心の声（think）は、名札・顔絵なし（扉の向こうの声などもここに出るため）
+  if (PAINT) { b.dataset.name = think ? '' : BOOK.name('toto'); if (!think) { b.insertAdjacentHTML('afterbegin', BOOK.face('toto', 'neutral')); BOOK.focus('toto'); } }
   await sleep(500 + t.length * 22);
 }
 let toastT;
@@ -373,7 +381,7 @@ async function finish(id) {
   renderHud();
   $('#v-bubble').classList.add('hidden'); $('#toto-say').classList.add('hidden'); $('#word-hint').classList.add('hidden');
   await sleep(600);
-  await playScene([{ bg: o.bg, caption: o.title, cast: o.cast, speaker: '', text: o.text }, { cast: [['leon', S.face]], speaker: 'レオン', text: o.last }]);
+  await playScene([{ bg: o.bg, caption: o.title, cast: o.cast, speaker: '', text: o.text }, { cast: [['leon', S.face]], speaker: 'レオン', text: o.last }], { painted: true });
   report(id, o, before);
 }
 
@@ -420,7 +428,8 @@ function playScene(beats, { painted = false } = {}) {
     const sc = $('#scene'); sc.classList.remove('hidden'); document.body.classList.add('in-scene');
     const paint = painted && typeof BOOK !== 'undefined' && BOOK.supports(beats);
     sc.classList.toggle('painted', paint); document.body.classList.toggle('scene-painted', paint);
-    $('#scene-cast').innerHTML = ''; $('#scene-face').innerHTML = '';
+    $('#scene-face').innerHTML = '';
+    if (paint) BOOK.setup($('#scene-cast'), beats); else $('#scene-cast').innerHTML = '';
     const q = beats.slice();
     let cast = [];
     const step = () => {
@@ -498,8 +507,9 @@ async function goRefuse() {
 // ---------------- 開始 ----------------
 async function start() {
   S = newState();
-  $('#bg').innerHTML = ART.bg.hall;
-  $('#toto').innerHTML = ART.toto({ expr: 'neutral' });
+  document.body.classList.toggle('painted', PAINT);
+  $('#bg').innerHTML = PAINT ? BOOK.bg('hall') : ART.bg.hall;
+  $('#toto').innerHTML = PAINT ? BOOK.figure('toto') : ART.toto({ expr: 'neutral' });
   render();
   await playScene([
     // 導入：なぜトトが客と話すのか（魔王様は眠りたい／追い返すのではなく、納得して帰ってもらう）
