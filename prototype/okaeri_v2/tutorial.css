@@ -2,10 +2,10 @@
 
 /* 手引きのあいだは、ふつうの下線ヒントは出さない（手引きが代わりに案内する） */
 body.tut #word-hint { display: none !important; }
-body.tut { padding-bottom: var(--coach-h, 0px); }
 
 /* いま押す相手：金色の光（「本当の望み」と同じ色） */
-.tut-target, body.tut #replies-box { scroll-margin: 70px 0 calc(var(--coach-h, 0px) + 12px); }
+/* 上に貼りつく手引きの札の下に隠れないように、札の高さぶん余白をとってスクロールする */
+.tut-target, body.tut #replies-box { scroll-margin: calc(var(--coach-h, 0px) + 8px) 0 12px; }
 .badge.tut-target { background: #3a2e14; color: #ffe6a0; border-color: var(--need); animation: tutGlow 1.4s ease-in-out infinite; z-index: 5; }
 .word.tut-target { background: #ffe2a8; border-bottom: 2px solid #c07a30; animation: tutGlow 1.4s ease-in-out infinite; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 .reply.tut-target { animation: tutGlow 1.4s ease-in-out infinite; }
@@ -21,18 +21,17 @@ body.tut { padding-bottom: var(--coach-h, 0px); }
 .badge.tut-off:hover { transform: none; background: #10202ce6; color: #9fd0f0; }
 #silence.tut-off:hover { background: transparent; } .d-btn.tut-off:hover { filter: saturate(.4); }
 
-/* 手引きの札：画面の下に固定（スマートフォンでも、スクロールせずに読める） */
+/* 手引きの札：タイトルの下・舞台の上（ふつうの並び）。スクロールしても、画面の上に貼りついて読める */
 #coach {
-  position: fixed; z-index: 50; left: 50%; transform: translateX(-50%);
-  bottom: max(10px, env(safe-area-inset-bottom)); width: min(560px, calc(100% - 20px));
-  background: #221c2a; border: 2px solid var(--need); border-radius: 14px; padding: 10px 16px 12px;
-  box-shadow: 0 6px 24px #000c; color: #f3ece0; animation: coachIn .3s ease-out;
+  position: -webkit-sticky; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50;
+  background: #221c2a; border: 2px solid var(--need); border-radius: 12px; padding: 8px 14px 10px;
+  box-shadow: 0 4px 14px #000a; color: #f3ece0; animation: coachIn .3s ease-out;
 }
-@keyframes coachIn { from { transform: translate(-50%, 16px); opacity: 0; } }
+@keyframes coachIn { from { transform: translateY(-8px); opacity: 0; } }
 #coach.ok { border-color: var(--ok); }
 #coach.nudge { animation: coachNudge .4s; }
-@keyframes coachNudge { 20%, 60% { transform: translateX(calc(-50% - 6px)); } 40%, 80% { transform: translateX(calc(-50% + 6px)); } }
-.co-dots { display: flex; gap: 6px; margin-bottom: 6px; }
+@keyframes coachNudge { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+.co-dots { display: flex; gap: 6px; margin-bottom: 5px; }
 .co-dots span { width: 22px; height: 5px; border-radius: 3px; background: #5a4a6a; }
 .co-dots span.past { background: var(--ok); } .co-dots span.now { background: var(--need); }
 .co-title { font-size: 12.5px; color: var(--need); letter-spacing: .1em; margin-bottom: 2px; }
@@ -47,9 +46,16 @@ body.tut { padding-bottom: var(--coach-h, 0px); }
 body.tut-free .badge, body.tut-free #silence, body.tut-free .d-btn { animation: tutFree 1.4s ease-out; }
 @keyframes tutFree { 30% { box-shadow: 0 0 0 3px #f6c860aa, 0 0 14px #f6c86088; } }
 
+/* v2.css は狭い画面で body に overflow-x: hidden をかけている。そのままだと body がスクロールの箱になり、
+   sticky が効かない。手引きのあいだだけ clip に（横にはみ出さないのは同じ。clip を知らない古いブラウザでは、札がページと一緒に流れるだけ） */
+@media (max-width: 820px) { body.tut { overflow-x: clip; } }
+
 @media (max-width: 480px) {
-  #coach { padding: 9px 13px 11px; }
-  .co-text { font-size: 15.5px; }
+  #coach { padding: 7px 12px 8px; border-radius: 10px; }
+  .co-dots { margin-bottom: 4px; } .co-dots span { width: 18px; height: 4px; }
+  .co-text { font-size: 15px; line-height: 1.45; }
+  .co-sub { font-size: 13px; line-height: 1.45; margin-top: 1px; }
+  #coach-go { margin-top: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .tut-target, .tut-ping, #coach, #coach.nudge, body.tut-free .badge, body.tut-free #silence, body.tut-free .d-btn { animation: none !important; }

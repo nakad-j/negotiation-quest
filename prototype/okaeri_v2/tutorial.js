@@ -38,7 +38,8 @@ const TUT = (() => {
     coach = document.createElement('div');
     coach.id = 'coach';
     coach.setAttribute('role', 'status'); coach.setAttribute('aria-live', 'polite');
-    document.body.appendChild(coach);
+    const stage = document.querySelector('#stage'); // タイトルの下・舞台の上に置く
+    stage.parentNode.insertBefore(coach, stage);
     return coach;
   }
   function show(html, cls) {
