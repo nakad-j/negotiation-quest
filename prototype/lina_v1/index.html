@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Negotiation Quest 試作：リーナとの交渉</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div id="scene-title">魔王城・応接室（という名の物置）</div>
+    <a href="tutorial.html" style="color:#c9b8e0;font-size:13px;margin-left:auto;margin-right:18px">‹ はじめての交渉（チュートリアル）</a>
+    <div id="candle-box" title="日没までの残り時間">
+      <span class="candle-label">日没まで</span>
+      <div id="candle"><div id="wax"></div><div id="flame"></div></div>
+    </div>
+  </header>
+
+  <main id="stage">
+    <div id="bg"></div>
+
+    <div id="bold-wrap" class="hot" data-hot="bold" title="ボルドを見る"></div>
+
+    <div id="lina-wrap">
+      <div id="lina"></div>
+      <div id="bubble" class="hidden"></div>
+    </div>
+
+    <div id="gesture" class="hidden"></div>
+
+    <div id="table">
+      <div id="table-items"></div>
+      <div id="notebook" class="hot" data-hot="notebook" title="リーナの手帳を見る">
+        <div class="nb-cover">📔</div>
+        <div id="nb-count"></div>
+      </div>
+    </div>
+
+    <div id="toto-wrap">
+      <div id="toto"></div>
+      <div id="thought" class="hidden"></div>
+    </div>
+
+    <!-- 幕間・後日・結果に使う全面レイヤー -->
+    <div id="scene" class="hidden">
+      <div id="scene-bg"></div>
+      <div id="scene-cast"></div>
+      <div id="scene-box">
+        <div id="scene-speaker"></div>
+        <div id="scene-text"></div>
+        <div id="scene-choices"></div>
+      </div>
+    </div>
+
+    <div id="popup" class="hidden"></div>
+  </main>
+
+  <section id="controls">
+    <div id="hint"></div>
+    <div id="respond" class="hidden"></div>
+    <div id="hand-area">
+      <div class="area-label">トトの手元 <small>（クリックで差し出す）</small></div>
+      <div id="hand"></div>
+    </div>
+    <div id="side">
+      <div class="area-label">トトの読み</div>
+      <ul id="clues"></ul>
+      <button id="end-btn">交渉を終える</button>
+    </div>
+  </section>
+</div>
+
+<script src="art.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

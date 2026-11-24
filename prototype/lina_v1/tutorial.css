@@ -1,0 +1,122 @@
+/* チュートリアル専用の追加スタイル（本編の style.css は変更しない） */
+#to-main { color: #c9b8e0; font-size: 13px; text-decoration: none; border: 1px solid #5a4a6a; padding: 4px 12px; border-radius: 10px; }
+#to-main:hover { background: #2a2430; }
+
+#coach { grid-column: 1 / 3; background: #1d2a3a; border-left: 4px solid #7ab0e0; padding: 8px 14px; border-radius: 8px;
+  font-size: 14px; line-height: 1.6; color: #dfeaf6; white-space: pre-line; animation: fadeUp .35s; }
+#coach::before { content: "てびき"; display: inline-block; font-size: 11px; background: #7ab0e0; color: #102030; padding: 0 8px; border-radius: 8px; margin-right: 8px; font-weight: bold; }
+
+/* 卓の上の財布（探れる品） */
+.t-item.hot-item { cursor: pointer; animation: slideIn .5s, softglow 2s 1s infinite; }
+.t-item.hot-item:hover { transform: scale(1.15); }
+@keyframes softglow { 50% { filter: drop-shadow(0 0 8px #ffe680); } }
+
+/* 最初のうちは、探れる場所がうっすら光る */
+body.observe-hint #lina-wrap [data-hot] { animation: softglow 2s infinite; }
+body.observe-hint #bold-wrap { animation: softglow 2s infinite; }
+body.observe-hint #notebook { animation: softglow 2s infinite; }
+
+/* ボルドはずぶ濡れ */
+#bold-wrap .drip { position: absolute; left: 40%; top: 10px; font-size: 22px; animation: drip 1.6s infinite; pointer-events: none; }
+@keyframes drip { from { transform: translateY(0); opacity: 1; } to { transform: translateY(60px); opacity: 0; } }
+
+.r-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.lock-note { font-size: 13px; opacity: .75; margin-left: 6px; }
+
+.found { font-size: 13px; opacity: .85; margin-top: 8px; }
+
+/* ================= 操作のわかりやすさ ================= */
+/* 色の約束：🔍 調べる＝水色 / 🎁 差し出す＝緑 / 💬 答える＝黄 / 📖 手帳＝琥珀 */
+:root { --c-inspect: #7ac8f0; --c-offer: #8fd39c; --c-answer: #f6d77a; --c-book: #e8b45a; }
+
+/* --- 調べる札 --- */
+#lina-badges { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.badge { position: absolute; pointer-events: auto; white-space: nowrap; font-size: 12px; font-weight: bold; line-height: 1;
+  padding: 5px 9px; border-radius: 12px; background: #10202cdd; color: var(--c-inspect); border: 1.5px solid var(--c-inspect);
+  box-shadow: 0 2px 6px #0008; transition: transform .15s, background .15s, opacity .2s; user-select: none; }
+.badge.inspect { cursor: zoom-in; }
+.badge .full { display: none; }
+.badge:hover { transform: scale(1.08); background: var(--c-inspect); color: #10202c; z-index: 9; }
+.badge:hover .v { display: none; } .badge:hover .full { display: inline; }
+.badge.done { opacity: .55; border-style: dashed; }
+.badge.done:hover { opacity: 1; }
+#bold-wrap .badge { transform-origin: left center; }
+#purse { position: relative; }
+#purse .badge { left: 50%; top: 84px; transform: translateX(-50%); font-size: 12px; }
+#purse .badge:hover { transform: translateX(-50%) scale(1.08); }
+.badge.book { position: absolute; left: 50%; top: 84px; transform: translateX(-50%); color: var(--c-book); border-color: var(--c-book); background: #2a1e0cdd; cursor: pointer; }
+.badge.book:hover { background: var(--c-book); color: #2a1e0c; transform: translateX(-50%) scale(1.08); }
+
+/* 調べられる本体にも、カーソルと軽いハイライト */
+#lina [data-hot], #bold-wrap, #purse { cursor: zoom-in; }
+#notebook { cursor: pointer; }
+#bold-wrap:hover { filter: brightness(1.05) drop-shadow(0 0 6px var(--c-inspect)); }
+#lina .hot-g:hover { filter: drop-shadow(0 0 6px var(--c-inspect)) drop-shadow(0 0 2px #fff); }
+
+/* 反応を見ているあいだ・答える番のあいだは、調べる札を引っ込める（画面を静かに） */
+body.busy .badge, body.answering .badge.inspect { opacity: 0; pointer-events: none; }
+
+/* 最初の一手までは、札をゆっくり光らせる（既存の光る演出を札に移す） */
+body.observe-hint .badge.inspect { animation: badgeglow 2.2s infinite; }
+body.observe-hint #lina-wrap [data-hot], body.observe-hint #bold-wrap, body.observe-hint #notebook { animation: none; }
+@keyframes badgeglow { 50% { box-shadow: 0 0 0 4px #7ac8f055, 0 0 14px var(--c-inspect); } }
+
+/* --- 状況バー --- */
+#status { grid-column: 1 / 3; display: flex; flex-direction: column; gap: 4px; }
+#status .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+#status .req { background: #3a2c18; border: 1.5px solid #e0a030; border-radius: 10px; padding: 5px 12px; font-size: 15px; }
+#status .ask { background: #e0a030; color: #2a1a10; font-size: 11px; font-weight: bold; padding: 1px 7px; border-radius: 7px; margin-right: 6px; }
+#status .mode { font-size: 14px; opacity: .95; }
+#status .mode.inspect { color: var(--c-inspect); } #status .mode.offer { color: var(--c-offer); }
+#status .mode.answer { color: var(--c-answer); } #status .mode.watch { opacity: .6; }
+#status .c-i { color: var(--c-inspect); } #status .c-o { color: var(--c-offer); } #status .c-a { color: var(--c-answer); }
+#status .last { font-size: 13px; opacity: .7; }
+#coach { padding: 6px 12px; font-size: 13px; }
+
+/* --- 答える --- */
+#respond { border-color: var(--c-answer); }
+
+/* --- 差し出す（手元のカード） --- */
+.card.offer { width: 168px; min-height: 0; padding: 8px 10px 0; align-items: stretch; text-align: left; border: 2px solid #8fd39c66; background: #f3ece0; }
+.card.offer .ic { text-align: center; }
+.card.offer .nm { text-align: center; font-size: 14px; }
+.card.offer .what { font-size: 11.5px; line-height: 1.45; opacity: .8; margin: 4px 0 6px; min-height: 34px; }
+.card.offer .foot { margin: 0 -10px; padding: 4px; text-align: center; font-size: 12px; font-weight: bold; background: #8fd39c; color: #163018; border-radius: 0 0 8px 8px; }
+.card.offer:hover { border-color: var(--c-offer); transform: translateY(-4px); }
+.card.offer.selected { border-color: var(--c-offer); transform: translateY(-10px); box-shadow: 0 0 0 3px #8fd39c66, 0 8px 18px #0008; }
+.card.offer.selected .foot { background: #2e7a3e; color: #fff; }
+#hand.picking .card { animation: offerpulse 1.6s infinite; border-color: var(--c-offer); }
+@keyframes offerpulse { 50% { box-shadow: 0 0 0 4px #8fd39c55; } }
+body.busy #hand .card { opacity: .5; pointer-events: none; }
+
+/* --- 差し出す前の確認パネル --- */
+#offer { grid-column: 1 / 2; background: #16281a; border: 2px solid var(--c-offer); border-radius: 12px; padding: 10px 14px; animation: fadeUp .2s; }
+#offer .o-head { font-size: 16px; font-weight: bold; color: var(--c-offer); }
+#offer .o-item { color: #fff; } #offer .alt-note { font-size: 12px; font-weight: normal; opacity: .75; }
+#offer .o-what { font-size: 14px; margin-top: 4px; }
+#offer .o-who { font-size: 13px; opacity: .75; margin-top: 2px; }
+#offer .o-btns { display: flex; gap: 10px; margin-top: 8px; }
+
+/* --- 配置（チュートリアル用に下部を組み直す） --- */
+body.tutorial #stage { height: 470px; }
+body.tutorial #lina-wrap { bottom: 110px; }
+body.tutorial #bold-wrap { bottom: 140px; }
+body.tutorial #table { height: 140px; }
+body.tutorial #controls { grid-template-columns: 1fr 270px; grid-template-rows: auto auto auto;
+  grid-template-areas: "status status" "respond coach" "hand side"; align-items: start; }
+#status { grid-area: status; }
+#coach { grid-area: coach; align-self: stretch; }
+#respond, #offer { grid-area: respond; }
+#hand-area { grid-area: hand; }
+body.tutorial #side { grid-area: side; grid-row: auto; }
+body.tutorial #clues { min-height: 60px; }
+#bold-wrap .badge { left: 38% !important; top: 26px !important; }
+
+/* --- 高さを詰める --- */
+#offer { display: grid; grid-template-columns: 1fr auto; column-gap: 14px; align-items: center; padding: 8px 14px; }
+#offer .o-head, #offer .o-what, #offer .o-who { grid-column: 1; }
+#offer .o-btns { grid-column: 2; grid-row: 1 / 4; margin: 0; }
+#offer .r-btn { padding: 8px 14px; }
+#status { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+#status .last { font-size: 12.5px; }
+body.tutorial #gesture { left: 36%; }

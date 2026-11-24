@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>おかえりください勇者様</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header id="hud">
+    <div id="title">おかえりください勇者様 <small id="day">一日目</small></div>
+    <div id="visitor-count"></div>
+    <div class="meter" id="m-stamina" title="魔王様の元気。戦ったり、呼び出したりすると減る"></div>
+    <div class="meter" id="m-rep" title="魔王様の評判"></div>
+    <div class="meter" id="m-terr" title="領地の村の数"></div>
+  </header>
+
+  <main id="stage">
+    <div id="bg"></div>
+    <div id="win-shadow"></div>
+    <div id="door"><div id="door-garza"></div><div id="door-tag"></div></div>
+    <div id="visitor-wrap">
+      <div id="v-name"></div>
+      <div id="visitor"></div>
+      <div id="v-badges"></div>
+    </div>
+    <div id="v-bubble" class="hidden"></div>
+    <div id="guard-wrap" class="hidden"><div id="guard"></div><div class="badge look" data-look="guard">🔍 門番に聞く</div></div>
+    <div id="desk"><div id="toto"></div><div class="desk-top"></div></div>
+    <div id="toto-say" class="hidden"></div>
+    <div id="toast" class="hidden"></div>
+
+    <div id="scene" class="hidden">
+      <div id="scene-bg"></div>
+      <div id="scene-cast"></div>
+      <div id="scene-box"><div id="scene-speaker"></div><div id="scene-text"></div><div id="scene-choices"></div></div>
+    </div>
+  </main>
+
+  <section id="panel">
+    <div class="col" id="col-ask">
+      <div class="col-h">💬 聞く <small>／ 🔍 絵の札で調べる</small></div>
+      <div id="questions"></div>
+    </div>
+    <div class="col" id="col-facts">
+      <div class="col-h">🧠 わかったこと</div>
+      <div id="facts"></div>
+    </div>
+    <div class="col" id="col-pitch">
+      <div class="col-h">💡 提案する <small id="pitch-sub"></small></div>
+      <div id="pitch"></div>
+    </div>
+    <div id="decide">
+      <span class="d-label">交渉しないなら：</span>
+      <button class="d-btn fight" id="btn-fight">👑 魔王様に通す<small>戦い・謁見になる。魔王様が疲れる</small></button>
+      <button class="d-btn refuse" id="btn-refuse">🚪 お引き取り願う<small>交渉せずに帰ってもらう</small></button>
+    </div>
+  </section>
+</div>
+<script src="art.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

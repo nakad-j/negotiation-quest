@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Negotiation Quest 試作：はじめての交渉（チュートリアル）</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="tutorial.css">
+</head>
+<body class="tutorial">
+<div id="app">
+  <header id="topbar">
+    <div id="scene-title">はじめての交渉 ― 一行が城に着いた夜</div>
+  </header>
+
+  <main id="stage">
+    <div id="bg"></div>
+    <div id="bold-wrap" data-hot="bold" title="ボルドを見る"></div>
+    <div id="lina-wrap">
+      <div id="lina"></div>
+      <div id="lina-badges"></div>
+      <div id="bubble" class="hidden"></div>
+    </div>
+    <div id="gesture" class="hidden"></div>
+    <div id="table">
+      <div id="table-items"></div>
+      <div id="notebook" data-hot="notebook" title="リーナの手帳を見る">
+        <div class="nb-cover">📔</div>
+        <div id="nb-count"></div>
+        <div class="badge book" data-hot="notebook"><span class="v">📖 開く</span><span class="full">📖 手帳を開く</span></div>
+      </div>
+    </div>
+    <div id="toto-wrap">
+      <div id="toto"></div>
+      <div id="thought" class="hidden"></div>
+    </div>
+    <div id="scene" class="hidden">
+      <div id="scene-bg"></div>
+      <div id="scene-cast"></div>
+      <div id="scene-box">
+        <div id="scene-speaker"></div>
+        <div id="scene-text"></div>
+        <div id="scene-choices"></div>
+      </div>
+    </div>
+    <div id="popup" class="hidden"></div>
+  </main>
+
+  <section id="controls">
+    <div id="status"></div>
+    <div id="coach" class="hidden"></div>
+    <div id="respond" class="hidden"></div>
+    <div id="offer" class="hidden"></div>
+    <div id="hand-area">
+      <div class="area-label">🎁 トトの手元 <small>― 選ぶと、何を差し出すか確認できる</small></div>
+      <div id="hand"></div>
+    </div>
+    <div id="side">
+      <div class="area-label">🔍 トトの読み <small>― 調べてわかったこと</small></div>
+      <ul id="clues"></ul>
+    </div>
+  </section>
+</div>
+
+<script src="art.js"></script>
+<script src="tutorial.js"></script>
+</body>
+</html>

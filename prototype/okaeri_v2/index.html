@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>おかえりください勇者様（試作 v2：レオン）</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="v2.css">
+</head>
+<body>
+<div id="app">
+  <header id="hud">
+    <div id="title">おかえりください勇者様 <small>試作 v2 ― 勇者レオン</small></div>
+    <div class="meter" id="m-stamina" title="魔王様の元気"></div>
+  </header>
+
+  <main id="stage">
+    <div id="bg"></div>
+    <div id="door"><div id="door-garza"></div><div id="door-tag"></div></div>
+    <div id="visitor-wrap">
+      <div id="v-name">勇者レオン</div>
+      <div id="visitor"></div>
+      <div id="v-badges"></div>
+    </div>
+    <div id="v-bubble" class="hidden"></div>
+    <div id="word-hint" class="hidden">下線の言葉をクリックすると、聞き返せる</div>
+    <div id="desk"><div id="toto"></div><div class="desk-top"></div></div>
+    <div id="toto-say" class="hidden"></div>
+    <div id="toast" class="hidden"></div>
+
+    <div id="scene" class="hidden">
+      <div id="scene-bg"></div>
+      <div id="scene-cast"></div>
+      <div id="scene-box"><div id="scene-speaker"></div><div id="scene-text"></div><div id="scene-choices"></div></div>
+    </div>
+  </main>
+
+  <section id="talk">
+    <div id="replies-box">
+      <div class="col-h">トトの返事</div>
+      <div id="replies"></div>
+      <div class="r-foot">
+        <button id="silence" title="何も言わずに、待つ">……（黙って待つ）</button>
+        <span class="r-tip">🔍 レオンの姿や持ち物も、クリックで見られる</span>
+      </div>
+    </div>
+    <aside id="memo">
+      <div class="memo-h">トトのメモ</div>
+      <ul id="memo-list"></ul>
+    </aside>
+    <div id="decide">
+      <span class="d-label">話をやめるなら：</span>
+      <button class="d-btn fight" id="btn-fight">👑 魔王様に通す<small>戦わせる。魔王様が疲れる</small></button>
+      <button class="d-btn refuse" id="btn-refuse">🚪 お引き取り願う<small>今日は帰ってもらう</small></button>
+    </div>
+  </section>
+</div>
+<script src="art.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

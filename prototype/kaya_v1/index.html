@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Negotiation Quest 試作：カヤ村の畑</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div id="conflict">
+      <span class="tag">対立</span>
+      <b>カヤ村</b>「襲撃をやめて、畑を取り戻したい」　⇄　<b>北の谷の魔物</b>「冬を越す食べ物がほしい」
+    </div>
+    <div id="rounds" title="話し合いの残り回数"></div>
+  </header>
+
+  <main id="stage">
+    <div id="bg"></div>
+
+    <div class="char-wrap" id="lina-wrap">
+      <div class="char-art" id="lina"></div>
+      <div class="name">リーナ<small>カヤ村の代表</small></div>
+      <div class="ask-btn" data-ask="lina">💬 話を聞く</div>
+      <div class="bubble hidden" id="lina-bubble"></div>
+    </div>
+
+    <div class="char-wrap" id="ganta-wrap">
+      <div class="char-art" id="ganta"></div>
+      <div class="name">ガンタ<small>北の谷の世話役</small></div>
+      <div class="ask-btn" data-ask="ganta">💬 話を聞く</div>
+      <div class="bubble hidden" id="ganta-bubble"></div>
+    </div>
+
+    <div id="toto-wrap"><div id="toto"></div><div id="thought" class="hidden"></div></div>
+
+    <div id="map" class="look" data-look="map" title="村の地図を見る">🗺<span class="look-tag">🔍 地図を見る</span></div>
+
+    <div id="ask-menu" class="hidden"></div>
+    <div id="toast" class="hidden"></div>
+
+    <div id="scene" class="hidden">
+      <div id="scene-bg"></div>
+      <div id="scene-cast"></div>
+      <div id="scene-box"><div id="scene-speaker"></div><div id="scene-text"></div><div id="scene-choices"></div></div>
+    </div>
+  </main>
+
+  <section id="bottom">
+    <div id="proposal">
+      <div class="p-head">
+        <span>📜 トトの案 <small>― 言葉をクリックして入れ替え・付け足しができる</small></span>
+        <span id="p-status">反応の印：<span class="mk l ok">✓</span>リーナ <span class="mk g ok">✓</span>ガンタ　✓よい △迷う ✕だめ</span>
+      </div>
+      <div id="sentence"></div>
+      <div id="counters"></div>
+      <div class="p-foot">
+        <span id="p-hint"></span>
+        <button id="propose-btn">📜 この案を出す</button>
+      </div>
+      <div id="deal-bar" class="hidden"></div>
+    </div>
+    <aside id="notes">
+      <div class="n-head">🧠 わかったこと</div>
+      <div id="notes-body"></div>
+    </aside>
+  </section>
+
+  <div id="picker" class="hidden"></div>
+  <div id="result" class="hidden"></div>
+</div>
+<script src="art.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
