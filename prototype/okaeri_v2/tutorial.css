@@ -24,16 +24,21 @@ body.tut #word-hint { display: none !important; }
 #tut-modal {
   position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
   padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-  background: #0a0810a6; animation: tmFade .25s ease-out; overscroll-behavior: contain; touch-action: none;
+  background: #0a0810a6; animation: tmFade .4s ease-out; overscroll-behavior: contain; touch-action: none;
 }
 @keyframes tmFade { from { background: #0a081000; } }
 .tm-box {
   width: min(440px, 100%); max-height: 100%; overflow-y: auto; touch-action: pan-y;
   background: linear-gradient(#2a2234, #1c1724); border: 2px solid var(--need); border-radius: 16px;
   padding: 18px 20px 18px; box-shadow: 0 0 0 4px #f6c86022, 0 12px 40px #000d; color: #f3ece0; text-align: center;
-  animation: tmIn .3s cubic-bezier(.3, 1.3, .5, 1);
+  animation: tmIn .45s cubic-bezier(.2, .9, .3, 1.08) both;
 }
-@keyframes tmIn { from { transform: translateY(12px) scale(.94); opacity: 0; } }
+@keyframes tmIn { from { transform: translateY(16px) scale(.95); opacity: 0; } }
+/* 閉じるとき：すっと消える（.26s。tutorial.js の CLOSE_MS と同じ） */
+#tut-modal.closing { animation: tmFadeOut .26s ease-in forwards; }
+#tut-modal.closing .tm-box { animation: tmOut .26s ease-in forwards; }
+@keyframes tmFadeOut { to { background: #0a081000; } }
+@keyframes tmOut { to { transform: translateY(8px) scale(.97); opacity: 0; } }
 .tm-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 12px; }
 .tm-dots span { width: 24px; height: 5px; border-radius: 3px; background: #5a4a6a; }
 .tm-dots span.past { background: var(--ok); } .tm-dots span.now { background: var(--need); }

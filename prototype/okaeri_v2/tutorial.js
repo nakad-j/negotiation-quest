@@ -28,6 +28,8 @@ const TUT = (() => {
   const NEXT = { inspect: 'word', word: 'reply', reply: 'release' };
   const INTERACTIVE = '.badge, #v-bubble .word, .reply, #silence, .d-btn';
   const speed = () => (typeof SPEED === 'number' ? SPEED : 1);
+  // 間合い（ミリ秒）：手のあと次のお知らせまで／勇者の第一声から最初のお知らせまで／お知らせが消える動き（tutorial.css の tmOut と同じ）
+  const NEXT_MS = 1100, FIRST_MS = 700, CLOSE_MS = 260;
 
   function target() {
     if (step === 'inspect') return '.badge[data-look="hands"]';
@@ -78,19 +80,26 @@ const TUT = (() => {
       e.stopPropagation();
       if (pressed) return; // 連打しても、1回だけ
       pressed = true;
-      readyAt = Date.now() + 350; // OK の連打が、閉じたあとの下の画面に落ちないように（最後の OK のあとも）
-      closeModal();
-      if (key === 'release') { finish(); if (typeof toast === 'function') toast('交渉係トト、お仕事開始！'); }
-      else start(key);
+      // OK の連打が、閉じたあとの下の画面に落ちないように（最後の OK のあとも）。閉じる動き（CLOSE_MS）＋少し
+      readyAt = Date.now() + CLOSE_MS + 200;
+      closeModal().then(() => {
+        if (key === 'release') { finish(); if (typeof toast === 'function') toast('交渉係トト、お仕事開始！'); }
+        else start(key);
+      });
     });
     setTimeout(() => { try { ok.focus({ preventScroll: true }); } catch (e) { /* 古いブラウザ */ } }, 50);
   }
+  // ゆっくり消してから外す（消えているあいだも、下の画面は押せないまま）
   function closeModal() {
-    if (!modal) return;
-    modal.remove(); modal = null;
-    document.body.classList.remove('tut-modal-open');
-    const app = document.querySelector('#app');
-    if (app) app.inert = false;
+    if (!modal) return Promise.resolve();
+    const m = modal; m.classList.add('closing');
+    return new Promise((resolve) => setTimeout(() => {
+      m.remove(); if (modal === m) modal = null;
+      document.body.classList.remove('tut-modal-open');
+      const app = document.querySelector('#app');
+      if (app) app.inert = false;
+      resolve();
+    }, CLOSE_MS));
   }
   // お知らせが開いているあいだ：Esc などで閉じたり飛ばしたりしない
   document.addEventListener('keydown', (e) => {
@@ -112,7 +121,7 @@ const TUT = (() => {
   function success(done) {
     if (typeof S !== 'undefined' && S && S.over) { closeModal(); return finish(); } // 念のため：応対が終わってしまったとき
     // 勇者の反応が目に入ってから、次のお知らせ
-    setTimeout(() => openModal(NEXT[done]), 500 * Math.max(speed(), 0.3));
+    setTimeout(() => openModal(NEXT[done]), NEXT_MS * Math.max(speed(), 0.3));
   }
   function finish() {
     if (!active) return;
@@ -133,7 +142,8 @@ const TUT = (() => {
     // ページを開いたとき：導入の場面のあいだから、ふつうの手引き（下線のヒント）を隠しておく
     init() { if (active) document.body.classList.add('tut'); },
     // 最初のせりふのあと（game.js の start から）
-    begin() { if (active && step === 'intro') openModal('inspect'); },
+    // 勇者の第一声を見てから、最初のお知らせ（そのあいだも step は intro なので、何も押せない）
+    begin() { if (active && step === 'intro') setTimeout(() => { if (step === 'intro') openModal('inspect'); }, FIRST_MS * Math.max(speed(), 0.3)); },
     mark,
     // game.js のクリック処理から：kind = look / word / reply / silence / fight / refuse
     allow(kind, key) {

@@ -492,10 +492,19 @@ async function start() {
   $('#toto').innerHTML = ART.toto({ expr: 'neutral' });
   render();
   await playScene([
+    // 導入：なぜトトが客と話すのか（魔王様は眠りたい／追い返すのではなく、納得して帰ってもらう）
     { bg: 'hall', caption: '魔王城の昼さがり', cast: [['garza2', { expr: 'tired' }], ['toto', { expr: 'neutral' }, 'small']], speaker: '魔王ガルザ様',
-      text: 'トトよ。わしは昼寝をする。腰が痛い。\n……誰が来ても、起こすでないぞ。' },
+      text: 'トトよ。最近、勇者どもが次から次へと城に押しかけてくる……。\nそのたびに起こされて、腰も痛い。わしは眠い。実に眠いのだ。' },
+    { cast: [['garza2', { expr: 'grumpy' }], ['toto', { expr: 'neutral' }, 'small']], speaker: '魔王ガルザ様',
+      text: 'これからは、勇者が来ても、わしのところへ通すな。\nお前が話を聞き、交渉して、納得させて帰らせるのだ。' },
+    { cast: [['garza2', { expr: 'grumpy' }], ['toto', { expr: 'sweat' }, 'small']], speaker: 'トト（あなた）',
+      text: 'えっ、ぼくがですか？\n……追い返すんじゃなくて、納得してもらうんですか？' },
+    { cast: [['garza2', { expr: 'tired' }], ['toto', { expr: 'worry' }, 'small']], speaker: '魔王ガルザ様',
+      text: '追い返しても、どうせまた来る。また起こされる。\n……来るからには、あやつらにも何かわけがあるのだろう。それを聞いて、片づけてやれ。' },
+    { cast: [['garza2', { expr: 'tired' }], ['toto', { expr: 'neutral' }, 'small']], speaker: '魔王ガルザ様',
+      text: 'わしを眠らせておくこと。それがお前の仕事だ。\n……では、頼んだぞ。…………すやぁ。' },
     { cast: [['toto', { expr: 'resolve' }]], speaker: 'トト（あなた）',
-      text: 'はい。お客さまには、ぼくがお話をうかがって……\nなるべく、おかえりいただきます。' },
+      text: '……よし。お話をよく聞いて、\n気持ちよく、おかえりいただこう。' },
   ]);
   S.busy = true; render();
   await totoSay('（カラン、と呼び鈴。……ぴかぴかの鎧の若者だ）', true);
