@@ -414,15 +414,25 @@ function report(id, o, before) {
 
 // ---------------- 場面 ----------------
 let curBg = null;
-function playScene(beats) {
+// painted: 絵本の見た目（storybook.js の絵）で描く。用意した絵で描けない場面は、ふだんの絵のまま
+function playScene(beats, { painted = false } = {}) {
   return new Promise((resolve) => {
     const sc = $('#scene'); sc.classList.remove('hidden'); document.body.classList.add('in-scene');
+    const paint = painted && typeof BOOK !== 'undefined' && BOOK.supports(beats);
+    sc.classList.toggle('painted', paint); document.body.classList.toggle('scene-painted', paint);
+    $('#scene-cast').innerHTML = ''; $('#scene-face').innerHTML = '';
     const q = beats.slice();
+    let cast = [];
     const step = () => {
-      if (!q.length) { sc.classList.add('hidden'); document.body.classList.remove('in-scene'); curBg = null; return resolve(); }
+      if (!q.length) {
+        sc.classList.add('hidden'); sc.classList.remove('painted'); document.body.classList.remove('in-scene', 'scene-painted');
+        $('#scene-face').innerHTML = ''; curBg = null; return resolve();
+      }
       const b = q.shift();
-      if (b.bg && b.bg !== curBg) { $('#scene-bg').innerHTML = ART.bg[b.bg]; curBg = b.bg; }
-      if (b.cast) $('#scene-cast').innerHTML = b.cast.map(([who, o, cls]) => `<div class="c ${cls || ''}">${ART[who](o || {})}</div>`).join('');
+      if (b.bg && b.bg !== curBg) { $('#scene-bg').innerHTML = paint ? BOOK.bg(b.bg) : ART.bg[b.bg]; curBg = b.bg; }
+      if (b.cast) cast = b.cast;
+      if (paint) BOOK.show($('#scene-cast'), $('#scene-face'), cast, b.speaker);
+      else if (b.cast) $('#scene-cast').innerHTML = b.cast.map(([who, o, cls]) => `<div class="c ${cls || ''}">${ART[who](o || {})}</div>`).join('');
       sc.querySelector('.caption-big')?.remove();
       if (b.caption) sc.insertAdjacentHTML('afterbegin', `<div class="caption-big">${b.caption}</div>`);
       $('#scene-speaker').textContent = b.speaker || '';
@@ -505,7 +515,7 @@ async function start() {
       text: 'わしを眠らせておくこと。それがお前の仕事だ。\n……では、頼んだぞ。…………すやぁ。' },
     { cast: [['toto', { expr: 'resolve' }]], speaker: 'トト（あなた）',
       text: '……よし。お話をよく聞いて、\n気持ちよく、おかえりいただこう。' },
-  ]);
+  ], { painted: true });
   S.busy = true; render();
   await totoSay('（カラン、と呼び鈴。……ぴかぴかの鎧の若者だ）', true);
   await leonSay({ t: '魔王はどこだ！ 勇者レオン、魔王に{duel|一騎打ち}を申し込む！' });

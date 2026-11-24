@@ -25,3 +25,5 @@
 | `v2.css` | v2 の画面（v1 の `style.css` に重ねる） |
 | `art.js` / `style.css` | v1 から複製（変更なし） |
 | `tutorial.js` / `tutorial.css` | はじめての手引き。どの手を受けつけるかは `TUT.allow()`（`game.js` のクリック処理から呼ぶ） |
+| `storybook.js` / `storybook.css` | 絵本の見た目。導入の場面を、謁見室の絵・アーチの額の人物・顔絵つきの文章の枠で描く（`playScene(beats, { painted: true })`）。羊皮紙の文章の枠と見出しの帯は、結末の場面にも使う |
+| `assets/` | `picture/keyvisual/` の設定画から切り抜いた絵（背景・人物・表情）。作り直すときは `assets/crop_keyvisual.py`（要 Pillow）。仮の素材で、透過の立ち絵ではない |
