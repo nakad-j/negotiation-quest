@@ -31,6 +31,18 @@
     <div id="toto-say" class="hidden"></div>
     <div id="toast" class="hidden"></div>
 
+    <!-- 観察の画面：訪問者の全身を見て、持ち物や体の気になるところを、絵の上で直接押して調べる -->
+    <div id="observe" class="hidden">
+      <div id="obs-bg"></div>
+      <div id="obs-stage"></div>
+      <div id="obs-panel">
+        <div class="obs-h">🔍 勇者レオンを、よく見る</div>
+        <div id="obs-text"></div>
+        <div id="obs-count"></div>
+        <button id="obs-talk" type="button">話す ▶</button>
+      </div>
+    </div>
+
     <div id="scene" class="hidden">
       <div id="scene-bg"></div>
       <div id="scene-cast"></div>
@@ -45,6 +57,7 @@
       <div class="r-foot">
         <button id="silence" title="何も言わずに、待つ">……（黙って待つ）</button>
         <span class="r-tip">🔍 レオンの姿や持ち物も、クリックで見られる</span>
+        <button id="btn-observe" type="button">🔍 レオンを、よく見る</button>
       </div>
     </div>
     <aside id="memo">

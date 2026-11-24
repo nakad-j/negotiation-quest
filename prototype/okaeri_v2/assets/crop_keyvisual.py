@@ -11,9 +11,15 @@ Boxes are (left, top, right, bottom) in source pixels. The big character
 illustrations bleed into the sheet's parchment text box on their right side, so
 their crops stop at that box's border (Toto loses the tip of the hat brim, the
 Demon King most of his right horn). These are temporary assets, not final sprites.
+
+Full-body art (picture/fullbody/) is drawn on a flat black matte (RGB, no alpha;
+the background is 0-3 in every channel). make_fullbody() turns the black that is
+connected to the image border into transparency (flood fill, then a slight soft
+edge), keeping the full canvas so normalized hit-region coordinates match the source.
+Dark areas inside the figure are not connected to the border and stay opaque.
 """
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[3]
 SRC = ROOT / 'picture' / 'keyvisual'
@@ -64,6 +70,25 @@ CROPS = [
     ('king', cell(1203, 585, 141, 128), 'face/king_asleep.jpg'),     # すやすや
 ]
 
+FULLBODY = ROOT / 'picture' / 'fullbody'
+FULLBODIES = [
+    # Leon, full body (observation screen). 1024x1536, same size as the source.
+    ('赤い外套の騎士レオン.png', 'chara/leon_full.webp'),
+]
+
+def make_fullbody(src, dst, thresh=12):
+    im = Image.open(src).convert('RGB')
+    r, g, b = im.split()
+    mx = ImageChops.lighter(ImageChops.lighter(r, g), b)
+    mark = mx.point(lambda v: 100 if v <= thresh else 200)  # 100 = near-black
+    w, h = im.size
+    for xy in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):
+        ImageDraw.floodfill(mark, xy, 0, thresh=0)            # 0 = black touching the border
+    alpha = mark.point(lambda v: 0 if v == 0 else 255).filter(ImageFilter.GaussianBlur(0.8))
+    im.putalpha(alpha)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    im.save(dst, quality=88, method=6)
+
 def main():
     sheets = {k: Image.open(SRC / v).convert('RGB') for k, v in SHEETS.items()}
     for sheet, box, name in CROPS:
@@ -71,6 +96,10 @@ def main():
         dst.parent.mkdir(parents=True, exist_ok=True)
         sheets[sheet].crop(box).save(dst, quality=90, subsampling=0, optimize=True, progressive=True)
         print(f'{name:28s} {box[2] - box[0]}x{box[3] - box[1]}  {dst.stat().st_size // 1024} KB')
+    for src, name in FULLBODIES:
+        dst = OUT / name
+        make_fullbody(FULLBODY / src, dst)
+        print(f'{name:28s} {Image.open(dst).size}  {dst.stat().st_size // 1024} KB')
 
 if __name__ == '__main__':
     main()

@@ -16,6 +16,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms * SPEED));
 // 絵本の見た目（storybook.js）。読みこめていなければ、art.js の仮の絵で描く
 const PAINT = typeof BOOK !== 'undefined';
 const VISITOR = 'leon'; // 応対中の訪問者（storybook.js の CHARS のキー）
+// 観察の画面（全身の絵の上を押して調べる）。全身の絵がなければ、ふだんの画面の🔍札で調べる
+const OBSERVE = PAINT && BOOK.canObserve(VISITOR);
+let observing = false;
 
 // ---------------- 状態 ----------------
 let S;
@@ -30,6 +33,7 @@ function newState() {
     f: { silences: 0, silenceHit: 0, mirrors: 0, askedWhy: 0, scaredEarly: 0, villageFixed: 0, jobLabel: 0 },
     face: { expr: 'proud', pose: 'point' },
     stamina: 3, busy: false, over: false,
+    met: false, // 観察を終えて、話しはじめたか（最初の「話す」で、レオンの第一声）
   };
 }
 
@@ -253,8 +257,9 @@ function renderLeon() {
   postureClass().split(' ').filter(Boolean).forEach((c) => w.classList.add(c));
   if (PAINT) { if (!$('#visitor .arch')) $('#visitor').innerHTML = BOOK.figure(VISITOR); w.dataset.pose = S.face.pose; }
   else $('#visitor').innerHTML = ART.leon(S.face);
-  $('#v-badges').innerHTML = Object.entries(LOOKS).map(([k, l]) =>
+  $('#v-badges').innerHTML = OBSERVE ? '' : Object.entries(LOOKS).map(([k, l]) =>
     `<div class="badge ${S.saw[k] ? 'done' : ''}" data-look="${k}" style="left:${l.pos[0]}px;top:${l.pos[1]}px">${S.saw[k] ? '✓' : '🔍'} ${l.lbl}</div>`).join('');
+  renderObserve();
 }
 function renderHud() {
   const face = ['ouch', 'tired', 'calm', 'calm'][S.stamina];
@@ -291,6 +296,7 @@ function render() {
   renderLeon(); renderHud(); renderMemo();
   if (!S.over) renderReplies();
   document.body.classList.toggle('busy', S.busy);
+  document.body.classList.toggle('talking', S.met); // 話しはじめるまで（導入・観察）は、返事と「話をやめる」を出さない
   TUT.mark();
 }
 function wordsToHtml(t) {
@@ -314,7 +320,10 @@ async function totoSay(t, think = false) {
   await sleep(500 + t.length * 22);
 }
 let toastT;
-function toast(t) { const el = $('#toast'); el.innerHTML = t; el.classList.remove('hidden'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.add('hidden'), 2600 * Math.max(SPEED, .5)); }
+function toast(t) {
+  // 観察の画面では、勇者の顔にかからないように、案内の枠の中に出す
+  if (observing) { $('#obs-text').insertAdjacentHTML('beforeend', `<div class="obs-gain">${t}</div>`); return; }
+  const el = $('#toast'); el.innerHTML = t; el.classList.remove('hidden'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.add('hidden'), 2600 * Math.max(SPEED, .5)); }
 
 // ---------------- 1ターン ----------------
 async function turn(totoLine, getReaction) {
@@ -478,6 +487,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('#silence')) { if (!TUT.allow('silence')) return; S.lastOpt = null; return turn('……', silence); }
   const lk = t.closest('[data-look]');
   if (lk) { if (!TUT.allow('look', lk.dataset.look)) return; return TUT.after(look(lk.dataset.look)); }
+  if (t.closest('#obs-talk')) { if (!observing || !TUT.allow('talk')) return; return TUT.after(leaveObserve()); }
+  if (t.closest('#btn-observe')) { if (!OBSERVE || observing || !TUT.allow('observe')) return; return enterObserve(); }
   if (t.closest('#btn-fight')) { if (!TUT.allow('fight')) return; return goFight(); }
   if (t.closest('#btn-refuse')) { if (!TUT.allow('refuse')) return; return goRefuse(); }
 });
@@ -485,7 +496,7 @@ document.addEventListener('click', (e) => {
 async function look(k) {
   if (S.saw[k]) return;
   S.busy = true; S.saw[k] = true; render();
-  await totoSay(`🔍 ${LOOKS[k].see}`, true);
+  if (observing) await obsSay(k, `🔍 ${LOOKS[k].see}`); else await totoSay(`🔍 ${LOOKS[k].see}`, true);
   if (LOOKS[k].memo) addMemo(...LOOKS[k].memo);
   toast('話のきっかけが、ひとつ増えた');
   S.busy = false; render();
@@ -504,10 +515,70 @@ async function goRefuse() {
   return finish('storm');
 }
 
+// ---------------- 観察の画面 ----------------
+// 応対のはじめと、話のとちゅう（🔍 レオンを、よく見る）で開く。調べた結果（S.saw・メモ）は、話の画面と同じ状態に残る。
+// 調べる処理は look()（ふだんの画面の🔍札と同じ）。ここで変えるのは、見せ方だけ。
+const LEON_FIRST = '魔王はどこだ！ 勇者レオン、魔王に{duel|一騎打ち}を申し込む！';
+const OBS_IDLE = '（どこか、気になるところは……）<div class="obs-tip">レオンの体や持ち物を、押して調べよう</div>';
+function renderObserve() {
+  if (!OBSERVE) return;
+  if (!$('#obs-stage .obs-fig')) {
+    const labels = Object.fromEntries(Object.entries(LOOKS).map(([k, l]) => [k, l.lbl]));
+    $('#obs-stage').innerHTML = BOOK.observeFigure(VISITOR, labels, S.saw);
+  }
+  document.querySelectorAll('#obs-stage .spot').forEach((el) => el.classList.toggle('done', !!S.saw[el.dataset.look]));
+  const all = Object.keys(LOOKS), n = all.filter((k) => S.saw[k]).length;
+  $('#obs-count').textContent = n === all.length ? '気になるところは、ぜんぶ調べた' : `調べたところ　${n} / ${all.length}`;
+}
+async function obsSay(k, t) {
+  document.querySelectorAll(`#obs-stage .spot[data-look="${k}"]`).forEach((el) => { el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); });
+  const m = LOOKS[k].memo;
+  const el = $('#obs-text');
+  el.innerHTML = t + (m ? `<div class="obs-memo">📝 メモ：${m[1]}</div>` : '');
+  el.classList.remove('new'); void el.offsetWidth; el.classList.add('new');
+  await sleep(500 + t.length * 22);
+}
+function enterObserve() {
+  observing = true;
+  if (!$('#obs-bg').innerHTML) $('#obs-bg').innerHTML = BOOK.bg('hall');
+  $('#obs-text').innerHTML = OBS_IDLE;
+  $('#obs-talk').textContent = S.met ? '話にもどる ▶' : '話す ▶';
+  $('#observe').classList.remove('hidden'); document.body.classList.add('observing');
+  $('#toast').classList.add('hidden');
+  render();
+  $('#stage').scrollIntoView({ block: 'start' });
+}
+async function leaveObserve() {
+  observing = false;
+  $('#observe').classList.add('hidden'); document.body.classList.remove('observing');
+  $('#stage').scrollIntoView({ block: 'start' });
+  if (S.met) return render();
+  // はじめて話す：レオンの第一声から、応対がはじまる
+  S.met = true; S.busy = true; render();
+  await leonSay({ t: LEON_FIRST });
+  S.busy = false; render();
+}
+
+// 最初の訪問者：レオンが来て、トトと短くあいさつする（ここではまだ、選ぶことも調べることもない）
+// 事情（証・協会・家族…）は明かさない。わけがありそうだ、とだけ。
+const LEON_ARRIVES = [
+  { bg: 'hall', caption: '最初のお客さま', cast: [['toto', { expr: 'neutral' }]], speaker: 'トト（あなた）',
+    text: '（カラン、と呼び鈴。……ぴかぴかの鎧の若者だ）' },
+  { cast: [['toto', { expr: 'sweat' }], ['leon', { expr: 'neutral' }]], speaker: '勇者レオン',
+    text: '勇者レオンだ。\n……魔王の城というのは、ここで合っているか。' },
+  { cast: [['toto', { expr: 'neutral' }], ['leon', { expr: 'neutral' }]], speaker: 'トト（あなた）',
+    text: 'は、はい。ようこそ、魔王城へ。\nぼくはトト。お客さまのお話をうかがう、交渉係です。' },
+  { cast: [['toto', { expr: 'worry' }], ['leon', { expr: 'proud' }]], speaker: '勇者レオン',
+    text: '交渉係……？\n悪いが、用があるのは魔王だ。わけあって、どうしても会わなければならない。' },
+  { cast: [['toto', { expr: 'resolve' }], ['leon', { expr: 'proud' }]], speaker: 'トト（あなた）',
+    text: '（わけ、か……。魔王様を起こさずに、納得して帰ってもらうには）\n（まずは、この人のことを、よく見てみよう）' },
+];
+
 // ---------------- 開始 ----------------
 async function start() {
   S = newState();
   document.body.classList.toggle('painted', PAINT);
+  document.body.classList.toggle('observable', OBSERVE);
   $('#bg').innerHTML = PAINT ? BOOK.bg('hall') : ART.bg.hall;
   $('#toto').innerHTML = PAINT ? BOOK.figure('toto') : ART.toto({ expr: 'neutral' });
   render();
@@ -526,10 +597,17 @@ async function start() {
     { cast: [['toto', { expr: 'resolve' }]], speaker: 'トト（あなた）',
       text: '……よし。お話をよく聞いて、\n気持ちよく、おかえりいただこう。' },
   ], { painted: true });
-  S.busy = true; render();
-  await totoSay('（カラン、と呼び鈴。……ぴかぴかの鎧の若者だ）', true);
-  await leonSay({ t: '魔王はどこだ！ 勇者レオン、魔王に{duel|一騎打ち}を申し込む！' });
-  S.busy = false; render();
+  // 最初のお客さま：レオンの到着と、短いあいさつ
+  await playScene(LEON_ARRIVES, { painted: true });
+  if (OBSERVE) {
+    // 観察の画面から。「話す」を押すと、レオンの第一声から応対がはじまる（leaveObserve）
+    enterObserve();
+  } else {
+    S.busy = true; render();
+    S.met = true;
+    await leonSay({ t: LEON_FIRST });
+    S.busy = false; render();
+  }
   TUT.begin(); // はじめての人には、1手ずつの手引き（tutorial.js）
 }
 start();

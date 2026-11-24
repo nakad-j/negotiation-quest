@@ -1,4 +1,4 @@
-// storybook.js — 絵本の見た目（キービジュアル由来の絵）。導入・応対・結末のすべてで使う。
+// storybook.js — 絵本の見た目（キービジュアル由来の絵）。導入・観察・応対・結末のすべてで使う。
 //
 // ・絵は assets/ の切り抜き（assets/crop_keyvisual.py で picture/keyvisual/ の設定画から作る）。すべてローカル。
 // ・人物は「アーチ型の額」に入れて見せる（設定画の絵には背景がついていて、透過の立ち絵ではないため）。
@@ -29,6 +29,17 @@ const BOOK = (() => {
         neutral: 'leon_calm', proud: 'leon_determined', angry: 'leon_angry', surprised: 'leon_surprised',
         worried: 'leon_troubled', sad: 'leon_faraway', cry: 'leon_weary', smile: 'leon_smile', joy: 'leon_relieved',
       },
+      // 観察の画面（全身の絵）。spots：game.js の LOOKS のキー → 絵の上の当たり判定 [左, 上, 幅, 高さ]。
+      // 値は絵の幅・高さに対する割合（0〜1）なので、絵の大きさが変わってもずれない。1つのキーに複数の場所を持てる
+      observe: {
+        img: 'chara/leon_full.webp', w: 1024, h: 1536,
+        spots: {
+          letter: [[0.545, 0.246, 0.109, 0.047]],                                   // 胸元の封筒
+          armor: [[0.602, 0.424, 0.084, 0.091]],                                    // ベルトに下がった「貸」の札
+          sword: [[0.309, 0.303, 0.145, 0.129], [0.225, 0.574, 0.09, 0.176]],       // 柄と鍔／鞘の先
+          hands: [[0.234, 0.495, 0.109, 0.077], [0.688, 0.503, 0.092, 0.07]],       // 左右の籠手の手
+        },
+      },
     },
   };
   const SLOTS = { 1: ['C'], 2: ['L', 'R'], 3: ['L', 'C', 'R'] };
@@ -39,6 +50,7 @@ const BOOK = (() => {
   // 先に読みこんでおく（切り替えのちらつきを防ぐ）
   const pre = new Set(Object.values(BG).map((b) => A + b.src));
   Object.keys(CHARS).forEach((who) => { pre.add(A + CHARS[who].fig); Object.keys(CHARS[who].face).concat('').forEach((e) => pre.add(faceSrc(who, e))); });
+  Object.values(CHARS).forEach((c) => { if (c.observe) pre.add(A + c.observe.img); });
   pre.forEach((src) => { new Image().src = src; });
 
   return {
@@ -56,6 +68,19 @@ const BOOK = (() => {
     face(who, expr, cls = 'bk-face') { return `<img class="${cls}" src="${faceSrc(who, expr)}" alt="">`; },
     // 応対の画面：いま話している人（ほかの人は少し暗く）
     focus(who) { document.body.dataset.speaker = who; },
+
+    // ---- 観察の画面 ----
+    // 全身の絵がある人だけ観察できる
+    canObserve: (who) => !!(CHARS[who] && CHARS[who].observe),
+    // 全身の絵と、調べられる場所（labels：キー → 名前。saw：調べ終えたキー）
+    observeFigure(who, labels, saw) {
+      const o = CHARS[who].observe;
+      const pct = (v) => `${(v * 100).toFixed(2)}%`;
+      const spots = Object.entries(o.spots).flatMap(([k, rects]) => rects.map(([x, y, w, h]) =>
+        `<button type="button" class="spot ${saw[k] ? 'done' : ''}" data-look="${k}" aria-label="${labels[k] || k}を調べる"
+          style="left:${pct(x)};top:${pct(y)};width:${pct(w)};height:${pct(h)}"></button>`)).join('');
+      return `<div class="obs-fig" style="aspect-ratio:${o.w} / ${o.h}"><img src="${A}${o.img}" alt="${CHARS[who].name}の全身">${spots}</div>`;
+    },
 
     // ---- 場面（導入・結末） ----
     // 場面に出てくる人をまとめて並べる（ひとりなら中央、ふたりなら左右、rank の順に左から）
