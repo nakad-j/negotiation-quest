@@ -5,7 +5,8 @@
 //  ・事情は「話題 × 深さ」（S.top）で持つ。同じせりふでも、開きが足りないと浅い答えしか返ってこない。
 //  ・毎ターン、トトの返事を3つ出す（OPTIONS から、使える・まだ使っていない・いまの話に近いものを優先）。
 //  ・レオンの吹き出しの下線の言葉 → クリックで聞き返す（WORDS）。……（黙って待つ）→ silence()。
-//  ・🔍 観察は答えを出さず、次の返事の候補に「話のきっかけ」を足す。
+//  ・🔍 観察は、会話と同じ画面で、いつでもできる（レオンの全身の絵の光るところを押す）。会話は止まらない・巻きもどらない。
+//    観察は答えを出さず、次の返事の候補に「話のきっかけ」を足す（その返事には 🔍 の札がつく：OPTIONS の clue）。
 //  ・メモは 推測（？）／本人が否定（✗）／確か（●）。思い違いも残る。
 //  ・「まとめ」で、そうなんだよ（届いた）／まあ、そんなとこだ（ずれ）／半分はな（足りない）。
 // せりふを直すときは WORDS / OPTIONS / silence / OUTCOMES を書き換える。
@@ -16,9 +17,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms * SPEED));
 // 絵本の見た目（storybook.js）。読みこめていなければ、art.js の仮の絵で描く
 const PAINT = typeof BOOK !== 'undefined';
 const VISITOR = 'leon'; // 応対中の訪問者（storybook.js の CHARS のキー）
-// 観察の画面（全身の絵の上を押して調べる）。全身の絵がなければ、ふだんの画面の🔍札で調べる
+// 応対の画面に、全身の絵を立たせ、その上を直接押して調べる。全身の絵がなければ、ふだんの画面の🔍札で調べる
 const OBSERVE = PAINT && BOOK.canObserve(VISITOR);
-let observing = false;
 
 // ---------------- 状態 ----------------
 let S;
@@ -33,7 +33,8 @@ function newState() {
     f: { silences: 0, silenceHit: 0, mirrors: 0, askedWhy: 0, scaredEarly: 0, villageFixed: 0, jobLabel: 0 },
     face: { expr: 'proud', pose: 'point' },
     stamina: 3, busy: false, over: false,
-    met: false, // 観察を終えて、話しはじめたか（最初の「話す」で、レオンの第一声）
+    met: false, // 話しはじめたか（レオンの第一声のあと）
+    fresh: null, // いちばん新しく調べた場所（その発見から生まれた返事を、目立たせる）
   };
 }
 
@@ -100,7 +101,7 @@ const OPTIONS = [
     act: () => ({ t: 'なら起こせ！ 勇者が来たんだぞ！', expr: 'angry', pose: 'point', irr: 1 }) },
   { id: 'praise', t: 'すごい鎧だね。強そう。', when: () => !S.summary && S.turn < 5 && !S.saw.armor, pri: () => 5,
     act: () => ({ t: 'ふふん、だろう？ ……{armor|鎧}は、大事だからな', expr: 'proud', pose: 'point', open: S.open === 0 ? 1 : 0 }) },
-  { id: 'tired', t: '遠くから来たんだね。少し座る？', when: () => !S.summary && (S.saw.hands || S.turn >= 2), pri: () => (S.saw.hands ? 7 : 3),
+  { id: 'tired', clue: 'hands', t: '遠くから来たんだね。少し座る？', when: () => !S.summary && (S.saw.hands || S.turn >= 2), pri: () => (S.saw.hands ? 7 : 3),
     act: () => (S.irr >= 3 ? { t: 'す、座らん！', expr: 'angry', pose: 'point' }
       : { t: 'す、座らん！ ……{tired|三日}、歩きどおしだったがな', gest: '少し肩の力を抜いた', expr: 'worried', pose: 'rest', irr: -1, open: S.open <= 1 ? 1 : 0 }) },
   { id: 'strict', t: '協会って、ずいぶん厳しいんだね。', when: () => S.top.guild >= 1 && S.top.allow < 2, pri: () => 5,
@@ -127,12 +128,12 @@ const OPTIONS = [
   { id: 'scared', t: '……本当は、戦いたくないんじゃない？', when: () => S.turn >= 4, pri: () => (S.open >= 3 ? 6 : 2),
     act: () => (S.open >= 3 ? { t: '……怖いさ。倒した魔物なんて、{slime|スライム}二匹半だ', gest: 'うつむいた', expr: 'cry', pose: 'slump', memo: [['scared', '本当は、戦うのが怖い', 'sure']] }
       : (S.f.scaredEarly++, { t: 'なんだと！ 俺を臆病者だと言うのか！', gest: '拳を握った', expr: 'angry', pose: 'point', irr: 2 })) },
-  // 🔍 観察から生まれる返事
-  { id: 'letter', t: 'その手紙、大事そうだね。', when: () => S.saw.letter, pri: () => 7,
+  // 🔍 観察から生まれる返事（clue：どの発見から生まれたか。返事に 🔍 の札がつく）
+  { id: 'letter', clue: 'letter', t: 'その手紙、大事そうだね。', when: () => S.saw.letter, pri: () => 7,
     act: () => (S.open >= 1 ? { t: '……{family|妹}からだ', gest: '手紙を押さえた', expr: 'sad', pose: 'rest', open: 1, set: { family: Math.max(S.top.family, 1) }, memo: [['family', '妹から手紙が来ている', 'guess']] }
       : { t: 'み、見るな！', expr: 'surprised', pose: 'rest', irr: 1, memo: [['letter', '懐の手紙……家族から？', 'guess']] }) },
-  { id: 'armorQ', t: 'その鎧、ぴかぴかだね。新しいの？', when: () => S.saw.armor, pri: () => 6, act: () => WORDS.armor() },
-  { id: 'sword', t: 'その剣、まだ一度も抜いてないみたいだね。', when: () => S.saw.sword, pri: () => 6,
+  { id: 'armorQ', clue: 'armor', t: 'その鎧、ぴかぴかだね。新しいの？', when: () => S.saw.armor, pri: () => 6, act: () => WORDS.armor() },
+  { id: 'sword', clue: 'sword', t: 'その剣、まだ一度も抜いてないみたいだね。', when: () => S.saw.sword, pri: () => 6,
     act: () => (S.open >= 2 ? { t: '……抜いたことはある。{slime|スライム}相手にな', gest: '苦笑いした', expr: 'worried', pose: 'rest', memo: [['skill', 'スライムとしか戦ったことがない……？', 'guess']] }
       : { t: 'ぬ、抜いたことくらいある！', expr: 'angry', pose: 'point', irr: 1 }) },
   // いつでも出せる、あいづち
@@ -222,8 +223,8 @@ function silence() {
 const LOOKS = {
   hands: { lbl: '手', pos: [30, 316], see: '籠手の中で、指先が小刻みに震えている……。', memo: ['nerve', '手が震えている。緊張……？', 'guess'] },
   armor: { lbl: '鎧の札', pos: [190, 322], see: '鎧の脇に札。「貸し鎧屋・一週間」……？', memo: ['armor', '鎧……借り物？', 'guess'] },
-  sword: { lbl: '剣', pos: [0, 266], see: '刃こぼれひとつない。……一度も使っていない？' },
-  letter: { lbl: '懐の紙', pos: [104, 196], see: '懐から手紙がのぞいている。丸い字で「おにいちゃんへ」。' },
+  sword: { lbl: '剣', pos: [0, 266], see: '刃こぼれひとつない。……一度も使っていない？', memo: ['sword', '剣に刃こぼれがない。使っていない……？', 'guess'] },
+  letter: { lbl: '懐の紙', pos: [104, 196], see: '懐から手紙がのぞいている。丸い字で「おにいちゃんへ」。', memo: ['letter', '懐に「おにいちゃんへ」の手紙', 'guess'] },
 };
 
 // ---------------- 反応を反映 ----------------
@@ -255,11 +256,22 @@ function renderLeon() {
   const w = $('#visitor-wrap');
   w.classList.remove('o0', 'o1', 'o2', 'o3', 'hot', 'boil');
   postureClass().split(' ').filter(Boolean).forEach((c) => w.classList.add(c));
-  if (PAINT) { if (!$('#visitor .arch')) $('#visitor').innerHTML = BOOK.figure(VISITOR); w.dataset.pose = S.face.pose; }
+  if (OBSERVE) renderFigure();
+  else if (PAINT) { if (!$('#visitor .arch')) $('#visitor').innerHTML = BOOK.figure(VISITOR); }
   else $('#visitor').innerHTML = ART.leon(S.face);
+  if (PAINT) w.dataset.pose = S.face.pose;
   $('#v-badges').innerHTML = OBSERVE ? '' : Object.entries(LOOKS).map(([k, l]) =>
     `<div class="badge ${S.saw[k] ? 'done' : ''}" data-look="${k}" style="left:${l.pos[0]}px;top:${l.pos[1]}px">${S.saw[k] ? '✓' : '🔍'} ${l.lbl}</div>`).join('');
-  renderObserve();
+}
+// 応対の画面のレオン：全身の絵と、調べる場所（絵は一度だけ作り、調べ終えた印だけ付けかえる）
+function renderFigure() {
+  if (!$('#visitor .obs-fig')) {
+    const labels = Object.fromEntries(Object.entries(LOOKS).map(([k, l]) => [k, l.lbl]));
+    $('#visitor').innerHTML = BOOK.observeFigure(VISITOR, labels, S.saw);
+  }
+  document.querySelectorAll('#visitor .spot').forEach((el) => el.classList.toggle('done', !!S.saw[el.dataset.look]));
+  const all = Object.keys(LOOKS), n = all.filter((k) => S.saw[k]).length;
+  $('#look-count').textContent = n === all.length ? '🔍 ぜんぶ調べた' : `🔍 調べたところ ${n} / ${all.length}`;
 }
 function renderHud() {
   const face = ['ouch', 'tired', 'calm', 'calm'][S.stamina];
@@ -286,7 +298,12 @@ function pickOptions() {
 function renderReplies() {
   const opts = pickOptions();
   S.shown = opts.map((o) => o.id);
-  $('#replies').innerHTML = opts.map((o) => `<button class="reply ${o.kind || ''}" data-o="${o.id}">「${typeof o.t === 'function' ? o.t() : o.t}」</button>`).join('');
+  // 観察から生まれた返事には、どこを見て思いついたかの札（いちばん新しい発見のものは、光らせる）
+  $('#replies').innerHTML = opts.map((o) => {
+    const clue = o.clue && S.saw[o.clue] ? `<span class="r-clue">🔍 ${LOOKS[o.clue].lbl}</span>` : '';
+    const fresh = o.clue && o.clue === S.fresh ? 'fresh' : '';
+    return `<button class="reply ${o.kind || ''} ${clue ? 'from-look' : ''} ${fresh}" data-o="${o.id}">${clue}「${typeof o.t === 'function' ? o.t() : o.t}」</button>`;
+  }).join('');
 }
 function renderMemo() {
   $('#memo-list').innerHTML = S.memoOrder.length ? S.memoOrder.map((k) => `<li class="${S.memo[k].lv}">${S.memo[k].text}</li>`).join('')
@@ -296,7 +313,7 @@ function render() {
   renderLeon(); renderHud(); renderMemo();
   if (!S.over) renderReplies();
   document.body.classList.toggle('busy', S.busy);
-  document.body.classList.toggle('talking', S.met); // 話しはじめるまで（導入・観察）は、返事と「話をやめる」を出さない
+  document.body.classList.toggle('talking', S.met); // 話しはじめるまで（導入）は、返事と「話をやめる」を出さない
   TUT.mark();
 }
 function wordsToHtml(t) {
@@ -321,8 +338,6 @@ async function totoSay(t, think = false) {
 }
 let toastT;
 function toast(t) {
-  // 観察の画面では、勇者の顔にかからないように、案内の枠の中に出す
-  if (observing) { $('#obs-text').insertAdjacentHTML('beforeend', `<div class="obs-gain">${t}</div>`); return; }
   const el = $('#toast'); el.innerHTML = t; el.classList.remove('hidden'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.add('hidden'), 2600 * Math.max(SPEED, .5)); }
 
 // ---------------- 1ターン ----------------
@@ -331,7 +346,7 @@ async function turn(totoLine, getReaction) {
   S.busy = true; render();
   try {
     await totoSay(totoLine);
-    S.turn++;
+    S.turn++; S.fresh = null;
     (S.shown || []).forEach((id) => { S.seen[id] = (S.seen[id] || 0) + 1; });
     const r = getReaction();
     if (r.retry && S.lastOpt) { S.used.delete(S.lastOpt); S.seen[S.lastOpt] = (S.seen[S.lastOpt] || 0) + 3; } // 「考えとく」などは、少し間をおけば、もう一度言える
@@ -487,19 +502,21 @@ document.addEventListener('click', (e) => {
   if (t.closest('#silence')) { if (!TUT.allow('silence')) return; S.lastOpt = null; return turn('……', silence); }
   const lk = t.closest('[data-look]');
   if (lk) { if (!TUT.allow('look', lk.dataset.look)) return; return TUT.after(look(lk.dataset.look)); }
-  if (t.closest('#obs-talk')) { if (!observing || !TUT.allow('talk')) return; return TUT.after(leaveObserve()); }
-  if (t.closest('#btn-observe')) { if (!OBSERVE || observing || !TUT.allow('observe')) return; return enterObserve(); }
   if (t.closest('#btn-fight')) { if (!TUT.allow('fight')) return; return goFight(); }
   if (t.closest('#btn-refuse')) { if (!TUT.allow('refuse')) return; return goRefuse(); }
 });
 
-async function look(k) {
-  if (S.saw[k]) return;
-  S.busy = true; S.saw[k] = true; render();
-  if (observing) await obsSay(k, `🔍 ${LOOKS[k].see}`); else await totoSay(`🔍 ${LOOKS[k].see}`, true);
+// 調べる：会話の途中でも、そのまま。レオンの吹き出し（いまの話）は消さず、トトの心の声で気づいたことを見せる。
+// 待ち時間はなく（S.busy にしない）、すぐに次の返事を選べる。同じ場所は二度と数えない。
+function look(k) {
+  if (S.saw[k] || !LOOKS[k]) return;
+  S.saw[k] = true; S.fresh = k;
   if (LOOKS[k].memo) addMemo(...LOOKS[k].memo);
-  toast('話のきっかけが、ひとつ増えた');
-  S.busy = false; render();
+  document.querySelectorAll(`#visitor .spot[data-look="${k}"]`).forEach((el) => { el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); });
+  totoSay(`🔍 ${LOOKS[k].see}`, true); // 読み終わるのを待たない（文字は次の手まで残る）
+  render();
+  const born = OPTIONS.some((o) => o.clue === k && S.shown.includes(o.id));
+  toast(born ? '🔍 気づいたことから、返事がひとつ浮かんだ' : '🔍 気づいたことを、メモに書いた');
 }
 async function goFight() {
   S.busy = true; render();
@@ -515,51 +532,9 @@ async function goRefuse() {
   return finish('storm');
 }
 
-// ---------------- 観察の画面 ----------------
-// 応対のはじめと、話のとちゅう（🔍 レオンを、よく見る）で開く。調べた結果（S.saw・メモ）は、話の画面と同じ状態に残る。
-// 調べる処理は look()（ふだんの画面の🔍札と同じ）。ここで変えるのは、見せ方だけ。
+// ---------------- レオンの第一声 ----------------
 const LEON_FIRST = '魔王はどこだ！ 勇者レオン、魔王に{duel|一騎打ち}を申し込む！';
-const OBS_IDLE = '（どこか、気になるところは……）<div class="obs-tip">レオンの体や持ち物を、押して調べよう</div>';
-function renderObserve() {
-  if (!OBSERVE) return;
-  if (!$('#obs-stage .obs-fig')) {
-    const labels = Object.fromEntries(Object.entries(LOOKS).map(([k, l]) => [k, l.lbl]));
-    $('#obs-stage').innerHTML = BOOK.observeFigure(VISITOR, labels, S.saw);
-  }
-  document.querySelectorAll('#obs-stage .spot').forEach((el) => el.classList.toggle('done', !!S.saw[el.dataset.look]));
-  const all = Object.keys(LOOKS), n = all.filter((k) => S.saw[k]).length;
-  $('#obs-count').textContent = n === all.length ? '気になるところは、ぜんぶ調べた' : `調べたところ　${n} / ${all.length}`;
-}
-async function obsSay(k, t) {
-  document.querySelectorAll(`#obs-stage .spot[data-look="${k}"]`).forEach((el) => { el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); });
-  const m = LOOKS[k].memo;
-  const el = $('#obs-text');
-  el.innerHTML = t + (m ? `<div class="obs-memo">📝 メモ：${m[1]}</div>` : '');
-  el.classList.remove('new'); void el.offsetWidth; el.classList.add('new');
-  await sleep(500 + t.length * 22);
-}
-function enterObserve() {
-  observing = true;
-  if (!$('#obs-bg').innerHTML) $('#obs-bg').innerHTML = BOOK.bg('hall');
-  $('#obs-text').innerHTML = OBS_IDLE;
-  $('#obs-talk').textContent = S.met ? '話にもどる ▶' : '話す ▶';
-  $('#observe').classList.remove('hidden'); document.body.classList.add('observing');
-  $('#toast').classList.add('hidden');
-  render();
-  $('#stage').scrollIntoView({ block: 'start' });
-}
-async function leaveObserve() {
-  observing = false;
-  $('#observe').classList.add('hidden'); document.body.classList.remove('observing');
-  $('#stage').scrollIntoView({ block: 'start' });
-  if (S.met) return render();
-  // はじめて話す：レオンの第一声から、応対がはじまる
-  S.met = true; S.busy = true; render();
-  await leonSay({ t: LEON_FIRST });
-  S.busy = false; render();
-}
-
-// 最初の訪問者：レオンが来て、トトと短くあいさつする（ここではまだ、選ぶことも調べることもない）
+// 最初の訪問者：レオンが来て、トトと短くあいさつする（ここではまだ、選ぶことも調べることもない。終わると、そのまま応対の画面へ）
 // 事情（証・協会・家族…）は明かさない。わけがありそうだ、とだけ。
 const LEON_ARRIVES = [
   { bg: 'hall', caption: '最初のお客さま', cast: [['toto', { expr: 'neutral' }]], speaker: 'トト（あなた）',
@@ -599,15 +574,10 @@ async function start() {
   ], { painted: true });
   // 最初のお客さま：レオンの到着と、短いあいさつ
   await playScene(LEON_ARRIVES, { painted: true });
-  if (OBSERVE) {
-    // 観察の画面から。「話す」を押すと、レオンの第一声から応対がはじまる（leaveObserve）
-    enterObserve();
-  } else {
-    S.busy = true; render();
-    S.met = true;
-    await leonSay({ t: LEON_FIRST });
-    S.busy = false; render();
-  }
+  // 応対の画面：レオンの第一声から。調べる場所（全身の絵）は、この時から話しながら押せる
+  S.busy = true; S.met = true; render();
+  await leonSay({ t: LEON_FIRST });
+  S.busy = false; render();
   TUT.begin(); // はじめての人には、1手ずつの手引き（tutorial.js）
 }
 start();

@@ -24,12 +24,13 @@ const BOOK = (() => {
       face: { tired: 'king_sleepy', grumpy: 'king_displeased', calm: 'king_content', ouch: 'king_troubled', asleep: 'king_asleep' },
     },
     leon: {
-      fig: 'chara/leon_figure.jpg', name: '勇者レオン', names: ['レオン'], rank: 2, base: 'leon_calm',
+      // flip：設定画の上半身は画面の右を向いている。場面では右側に立つので、左右を反転して会話の相手（中央）を向かせる
+      fig: 'chara/leon_figure.jpg', flip: true, name: '勇者レオン', names: ['レオン'], rank: 2, base: 'leon_calm',
       face: {
         neutral: 'leon_calm', proud: 'leon_determined', angry: 'leon_angry', surprised: 'leon_surprised',
         worried: 'leon_troubled', sad: 'leon_faraway', cry: 'leon_weary', smile: 'leon_smile', joy: 'leon_relieved',
       },
-      // 観察の画面（全身の絵）。spots：game.js の LOOKS のキー → 絵の上の当たり判定 [左, 上, 幅, 高さ]。
+      // 全身の絵（応対の画面で、話しながら調べる）。spots：game.js の LOOKS のキー → 絵の上の当たり判定 [左, 上, 幅, 高さ]。
       // 値は絵の幅・高さに対する割合（0〜1）なので、絵の大きさが変わってもずれない。1つのキーに複数の場所を持てる
       observe: {
         img: 'chara/leon_full.webp', w: 1024, h: 1536,
@@ -45,7 +46,7 @@ const BOOK = (() => {
   const SLOTS = { 1: ['C'], 2: ['L', 'R'], 3: ['L', 'C', 'R'] };
   const faceSrc = (who, expr) => `${A}face/${CHARS[who].face[expr] || CHARS[who].base}.jpg`;
   const speakerOf = (name = '') => Object.keys(CHARS).find((who) => CHARS[who].names.some((n) => name.includes(n))) || null;
-  const arch = (who) => `<img src="${A}${CHARS[who].fig}" alt="">`;
+  const arch = (who) => `<img src="${A}${CHARS[who].fig}" alt=""${CHARS[who].flip ? ' class="flip"' : ''}>`;
 
   // 先に読みこんでおく（切り替えのちらつきを防ぐ）
   const pre = new Set(Object.values(BG).map((b) => A + b.src));
@@ -69,15 +70,16 @@ const BOOK = (() => {
     // 応対の画面：いま話している人（ほかの人は少し暗く）
     focus(who) { document.body.dataset.speaker = who; },
 
-    // ---- 観察の画面 ----
-    // 全身の絵がある人だけ観察できる
+    // ---- 全身の絵と、調べる場所（応対の画面で、会話と同時に使う） ----
+    // 全身の絵がある人だけ、体や持ち物を直接押して調べられる
     canObserve: (who) => !!(CHARS[who] && CHARS[who].observe),
     // 全身の絵と、調べられる場所（labels：キー → 名前。saw：調べ終えたキー）
+    // 1つのキーの最初の場所（lead）にだけ、🔍／✓ の印をつける（同じものに印が2つ並ばないように）
     observeFigure(who, labels, saw) {
       const o = CHARS[who].observe;
       const pct = (v) => `${(v * 100).toFixed(2)}%`;
-      const spots = Object.entries(o.spots).flatMap(([k, rects]) => rects.map(([x, y, w, h]) =>
-        `<button type="button" class="spot ${saw[k] ? 'done' : ''}" data-look="${k}" aria-label="${labels[k] || k}を調べる"
+      const spots = Object.entries(o.spots).flatMap(([k, rects]) => rects.map(([x, y, w, h], i) =>
+        `<button type="button" class="spot ${i === 0 ? 'lead' : ''} ${saw[k] ? 'done' : ''}" data-look="${k}" aria-label="${labels[k] || k}を調べる"
           style="left:${pct(x)};top:${pct(y)};width:${pct(w)};height:${pct(h)}"></button>`)).join('');
       return `<div class="obs-fig" style="aspect-ratio:${o.w} / ${o.h}"><img src="${A}${o.img}" alt="${CHARS[who].name}の全身">${spots}</div>`;
     },

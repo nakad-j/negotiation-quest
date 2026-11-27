@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<!--
+  tests/flow.html — 通しテスト（ブラウザで開くだけ。ビルド・追加の道具なし）
+  本物の index.html を iframe で開き、クリックで遊んで確かめる。デスクトップ（1280×800）とスマートフォン縦（390×844）の両方。
+    ・手引きあり：導入 → 第一声 → 🔍手（会話の画面のまま）→ 言葉 → 返事（🔍手から生まれた返事）→ 手引き終わり
+    ・手引きなし：調べても会話が消えない・待たされない・同じ場所は二度数えない・調べる場所が絵の中で押せる位置にある
+      → 最後まで話して結末（もう一度）まで、エラーなし
+  ローカルのサーバーで開く（例：prototype/okaeri_v2 で python3 -m http.server 8765 → http://127.0.0.1:8765/tests/flow.html）。
+  ヘッドレス：Chrome --headless --dump-dom --virtual-time-budget=60000 http://127.0.0.1:8765/tests/flow.html の #result が PASS／FAIL。
+-->
+<html lang="ja"><head><meta charset="UTF-8"><title>okaeri v2 flow test</title>
+<style>body{font:14px monospace;background:#111;color:#ddd} iframe{border:1px solid #555;margin:4px;vertical-align:top} .ok{color:#7c7}.ng{color:#f77}</style></head>
+<body><div id="result">RUNNING</div><ol id="log"></ol><div id="frames"></div>
+<script>
+const log = (ok, msg) => { const li = document.createElement('li'); li.className = ok ? 'ok' : 'ng'; li.textContent = (ok ? 'ok   ' : 'FAIL ') + msg; document.querySelector('#log').appendChild(li); if (!ok) failed++; };
+let failed = 0;
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+async function until(fn, ms = 8000, step = 50) { const t = Date.now(); while (Date.now() - t < ms) { try { const v = fn(); if (v) return v; } catch (e) { /* not ready */ } await wait(step); } return null; }
+
+function open(w, h, query) {
+  return new Promise((resolve) => {
+    const f = document.createElement('iframe'); f.width = w; f.height = h; f.src = `../index.html?fast${query}`;
+    f.onload = () => { const win = f.contentWindow; const errs = []; win.addEventListener('error', (e) => errs.push(e.message)); win.addEventListener('unhandledrejection', (e) => errs.push(String(e.reason))); resolve({ f, win, doc: f.contentDocument, errs }); };
+    document.querySelector('#frames').appendChild(f);
+  });
+}
+const $$ = (g, s) => [...g.doc.querySelectorAll(s)];
+const q = (g, s) => g.doc.querySelector(s);
+const S = (g) => g.win.eval('S');
+
+async function throughIntro(g) {
+  // 導入の場面を進める（魔王様 → レオン到着）。最後の場面の「続ける」で、応対の画面へ
+  for (let i = 0; i < 20 && !q(g, '#scene').classList.contains('hidden'); i++) { q(g, '.next-btn')?.click(); await wait(120); }
+  await until(() => S(g).met && !S(g).busy);
+}
+function figureChecks(g, label) {
+  const stage = q(g, '#stage').getBoundingClientRect();
+  const fig = q(g, '#visitor .obs-fig');
+  log(!!fig, `${label}: 全身の絵が、応対の画面に立っている`);
+  log(q(g, '#visitor').scrollTop === 0, `${label}: 絵がずれていない（頭が切れない）`);
+  const bubble = q(g, '#v-bubble');
+  log(!bubble.classList.contains('hidden') && bubble.offsetHeight > 0, `${label}: レオンの吹き出しが見えている`);
+  // 調べる場所：すべて舞台の中にあり、押したときに一番上にあるのがその場所（ほかの物にふさがれていない）
+  const keys = [...new Set($$(g, '#visitor .spot').map((s) => s.dataset.look))];
+  log(keys.length === 4, `${label}: 調べる場所が4つ（${keys.join(',')}）`);
+  for (const el of $$(g, '#visitor .spot.lead')) {
+    const b = el.getBoundingClientRect(); const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+    const inside = cx > stage.left && cx < stage.right && cy > stage.top && cy < stage.bottom;
+    const top = g.doc.elementFromPoint(cx, cy);
+    log(inside && top === el && b.width >= 18 && b.height >= 14, `${label}: ${el.dataset.look} が押せる（${b.width | 0}×${b.height | 0}px）`);
+  }
+}
+
+async function tutorialRun(w, h, label) {
+  const g = await open(w, h, '&tutorial');
+  await throughIntro(g);
+  log(q(g, '#v-bubble').textContent.includes('一騎打ち'), `${label}/手引き: レオンの第一声`);
+  log(!!q(g, '#visitor .spot') && !q(g, '#observe'), `${label}/手引き: 別の観察の画面はなく、会話の画面に調べる場所がある`);
+  await until(() => q(g, '#tut-modal .tm-ok')); q(g, '#tut-modal .tm-ok').click(); await wait(700);
+  q(g, '.spot[data-look="hands"]').click(); await wait(100);
+  log(S(g).saw.hands && q(g, '#v-bubble').textContent.includes('一騎打ち'), `${label}/手引き: 手を調べても、レオンの話は残る`);
+  log(!S(g).busy, `${label}/手引き: 調べたあと、待たされない`);
+  log(!!q(g, '.reply[data-o="tired"] .r-clue'), `${label}/手引き: 手から生まれた返事（🔍 手）が出る`);
+  await until(() => q(g, '#tut-modal .tm-ok')); await wait(100); q(g, '#tut-modal .tm-ok').click(); await wait(700);
+  q(g, '#v-bubble .word.tut-target').click();
+  await until(() => q(g, '#tut-modal .tm-ok')); await wait(100); q(g, '#tut-modal .tm-ok').click(); await wait(700);
+  const r = q(g, '.reply[data-o="tired"]') || q(g, '.reply'); r.click();
+  await until(() => q(g, '#tut-modal .tm-ok')); await wait(100); q(g, '#tut-modal .tm-ok').click(); await wait(700);
+  log(!g.win.eval('TUT.active'), `${label}/手引き: 最後まで終わる`);
+  log(g.errs.length === 0, `${label}/手引き: エラーなし ${g.errs.join(' / ')}`);
+  g.f.remove();
+}
+
+async function playRun(w, h, label) {
+  try { localStorage.setItem('okaeri_v2.tutorialDone', '1'); } catch (e) { /* */ }
+  const g = await open(w, h, '');
+  await throughIntro(g);
+  figureChecks(g, label);
+  const line = q(g, '#v-bubble').textContent;
+  // 同じ場所を何度押しても、1回だけ
+  const spot = q(g, '.spot[data-look="hands"]');
+  spot.click(); spot.click(); $$(g, '.spot[data-look="hands"]')[1].click();
+  const memo = S(g).memoOrder.filter((k) => k === 'nerve').length;
+  log(memo === 1 && $$(g, '#memo-list li').length === 1, `${label}: 手を3回押しても、メモは1つ`);
+  log(q(g, '#v-bubble').textContent === line, `${label}: 調べても、会話は巻きもどらない`);
+  log(q(g, '.spot.lead[data-look="hands"]').classList.contains('done'), `${label}: 調べた場所に ✓`);
+  log(q(g, '#look-count').textContent.includes('1 / 4'), `${label}: 調べた数 1 / 4`);
+  // 話して、また調べて、話す
+  q(g, '.reply[data-o="tired"]').click(); await until(() => !S(g).busy);
+  log(S(g).turn === 1 && q(g, '#v-bubble').textContent.includes('三日'), `${label}: 手から生まれた返事で、話が進む（三日、歩きどおし）`);
+  q(g, '.spot[data-look="letter"]').click(); await wait(50);
+  log(!!q(g, '.reply[data-o="letter"].fresh'), `${label}: 手紙を調べると、話のとちゅうでも新しい返事が光る`);
+  log(S(g).memo.nerve && S(g).memo.letter, `${label}: 前に見つけたことも、残っている`);
+  q(g, '.reply[data-o="letter"]').click(); await until(() => !S(g).busy);
+  q(g, '.spot[data-look="armor"]').click(); q(g, '.spot[data-look="sword"]').click(); await wait(50);
+  log(q(g, '#look-count').textContent.includes('ぜんぶ'), `${label}: 4つとも調べた`);
+  // 最後まで：あいている返事を選んでいく（まとめ・提案を優先）。結末まで
+  const prefer = ['jRevise', 'jLabel', 'jExplain', 'pJobNo', 'pJobDirect', 'summary', 'alone', 'cost', 'what', 'how', 'pCert', 'pShow', 'villageWait', 'strict', 'show', 'sword', 'armorQ', 'tired'];
+  for (let i = 0; i < 40 && !S(g).over; i++) {
+    const ids = $$(g, '.reply').map((b) => b.dataset.o);
+    const words = $$(g, '#v-bubble .word:not(.used)');
+    if (words.length && i % 2 === 0) words[0].click();
+    else { const id = prefer.find((p) => ids.includes(p)) || ids[0]; q(g, `.reply[data-o="${id}"]`).click(); }
+    await until(() => !S(g).busy || S(g).over);
+  }
+  log(S(g).over, `${label}: 結末までたどりつく（${S(g).turn} 回）`);
+  for (let i = 0; i < 5 && !q(g, '#report'); i++) { q(g, '.next-btn')?.click(); await wait(200); }
+  const rep = await until(() => q(g, '#report'));
+  log(!!rep && !!q(g, '#again'), `${label}: 結果の画面（${rep ? q(g, '#report h1').textContent : '-'}）`);
+  log(g.errs.length === 0, `${label}: エラーなし ${g.errs.join(' / ')}`);
+  g.f.remove();
+}
+
+(async () => {
+  let saved = null; try { saved = localStorage.getItem('okaeri_v2.tutorialDone'); } catch (e) { /* */ }
+  try {
+    await tutorialRun(1280, 800, 'desktop');
+    await tutorialRun(390, 844, 'mobile');
+    await playRun(1280, 800, 'desktop');
+    await playRun(390, 844, 'mobile');
+  } catch (e) { log(false, 'exception: ' + e.message); }
+  try { if (saved === null) localStorage.removeItem('okaeri_v2.tutorialDone'); else localStorage.setItem('okaeri_v2.tutorialDone', saved); } catch (e) { /* */ }
+  document.querySelector('#result').textContent = failed ? `FAIL (${failed})` : 'PASS';
+})();
+</script></body></html>

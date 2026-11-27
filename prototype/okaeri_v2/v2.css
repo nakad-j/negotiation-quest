@@ -60,9 +60,8 @@ body.busy #replies-box, body.in-scene #talk { opacity: .45; pointer-events: none
 
 #decide { grid-column: 1; justify-content: flex-end; }
 body.busy #decide, body.in-scene #decide { opacity: .35; pointer-events: none; }
-/* 話しはじめる前（導入の場面・最初の観察）は、返事と「話をやめる」を出さない。観察中はメモだけ */
-body:not(.talking) #replies-box, body:not(.talking) #decide { display: none; }
-body:not(.talking):not(.observing) #talk { display: none; }
+/* 話しはじめる前（導入の場面）は、下段を出さない */
+body:not(.talking) #talk { display: none; }
 
 /* 結果 */
 #report .r-lines { font-size: 15px; line-height: 1.8; }
